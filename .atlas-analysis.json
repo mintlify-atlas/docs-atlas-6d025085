@@ -1,0 +1,102 @@
+{
+  "projectType": "cli-tool",
+  "projectName": "Scope Rule Architects",
+  "projectDescription": "Claude Code agents that enforce the Scope Rule architectural pattern for Angular, Next.js, Astro, and React projects",
+  "theme": "aspen",
+  "primaryColor": "#94cb04",
+  "lightColor": "#545454",
+  "darkColor": null,
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/scope-rule",
+              "concepts/screaming-architecture",
+              "concepts/co-location"
+            ]
+          },
+          {
+            "group": "Agents",
+            "pages": [
+              "agents/angular",
+              "agents/nextjs",
+              "agents/astro",
+              "agents/react"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/component-placement",
+              "guides/project-setup",
+              "guides/migration",
+              "guides/best-practices"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Examples",
+        "groups": [
+          {
+            "group": "Use Cases",
+            "pages": [
+              "examples/e-commerce",
+              "examples/blog-site",
+              "examples/dashboard"
+            ]
+          },
+          {
+            "group": "Patterns",
+            "pages": [
+              "examples/shared-components",
+              "examples/feature-structure",
+              "examples/refactoring"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Community",
+        "groups": [
+          {
+            "group": "Resources",
+            "pages": [
+              "community/contributing",
+              "community/faq",
+              "community/roadmap"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Enforces Scope Rule architectural pattern",
+    "Framework-specific agents for Angular, Next.js, Astro, and React",
+    "MCP integration with official framework documentation",
+    "Automated architectural decision guidance",
+    "Screaming Architecture principles",
+    "Co-location best practices",
+    "Modern framework features (standalone components, Server Components, islands)",
+    "Battle-tested patterns from Google Developer Expert & Microsoft MVP"
+  ],
+  "publicApiSurface": [
+    "scope-rule-architect-angular - Angular 20+ agent with standalone components and signals",
+    "scope-rule-architect-nextjs - Next.js 15+ agent with App Router and Server Components",
+    "scope-rule-architect-astro - Astro 5+ agent with Islands Architecture",
+    "scope-rule-architect-react - React 19+ agent with modern patterns"
+  ]
+}
