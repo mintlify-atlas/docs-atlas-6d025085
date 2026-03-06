@@ -359,7 +359,7 @@ Once you have the agents installed, simply ask Claude Code architectural questio
 
 If a component is only used within a single feature, it stays local:
 
-```
+```text
 User: I have a CartSummary component only used in the shopping cart feature.
 
 Agent: Since CartSummary is used by only 1 feature, it MUST stay local
@@ -370,7 +370,7 @@ within the shopping-cart feature directory.
 
 If a component is used across multiple features, it moves to shared:
 
-```
+```text
 User: I have a Button component used in cart, profile, and checkout.
 
 Agent: Since Button is used by 3 features, it MUST go in the shared/components
@@ -381,7 +381,7 @@ directory.
 
 The agents can help restructure existing projects:
 
-```
+```text
 User: My components are all in a single components folder. How should I restructure?
 
 Agent: I'll analyze your component usage and create a structure following the
