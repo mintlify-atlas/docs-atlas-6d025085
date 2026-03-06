@@ -1,0 +1,411 @@
+---
+title: 'Screaming Architecture'
+description: 'How your project structure should immediately communicate what your application does'
+---
+
+## What is Screaming Architecture?
+
+The term "Screaming Architecture" comes from Uncle Bob Martin's principle that:
+
+<Info>
+**Your architecture should scream about the use cases of the application, not about the frameworks and tools you're using.**
+
+When you look at the project structure, it should immediately tell you what the application **does**, not how it's built.
+</Info>
+
+## The Problem with Technical Architecture
+
+Most codebases organize by technical concerns:
+
+```typescript
+src/
+  components/         # What does this app do?
+  services/           # Still don't know...
+  hooks/              # Is this e-commerce? A blog? A dashboard?
+  utils/              # The structure tells me nothing about the domain
+  types/
+```
+
+**This structure screams:** "I'm a React application!"
+
+**It should scream:** "I'm an e-commerce platform with shopping, authentication, and user profiles!"
+
+## Screaming Architecture in Practice
+
+### Next.js Example
+
+From the Next.js Scope Rule Architect:
+
+```typescript
+src/
+  app/
+    (auth)/                        # 👀 Authentication feature
+      login/
+        page.tsx                   # /login route
+        _components/               # 📍 Login-specific components
+          login-form.tsx
+      register/
+        page.tsx                   # /register route
+        _components/               # 📍 Register-specific components
+          register-form.tsx
+      _components/                 # 🔄 Shared auth components
+        social-login.tsx           # Used by both login and register
+      _actions/                    # 🔄 Auth server actions
+        auth-actions.ts
+    (shop)/                        # 👀 E-commerce feature
+      shop/
+        page.tsx                   # /shop route
+        _components/               # 📍 Shop-specific components
+          product-list.tsx
+          product-filter.tsx
+      cart/
+        page.tsx                   # /cart route
+        _components/               # 📍 Cart-specific components
+          cart-item.tsx
+          cart-summary.tsx
+      wishlist/
+        page.tsx                   # /wishlist route
+        _components/               # 📍 Wishlist-specific components
+          wishlist-item.tsx
+    (dashboard)/                   # 👀 User dashboard feature
+      dashboard/
+        page.tsx
+        _components/
+          stats-card.tsx
+      profile/
+        page.tsx
+        _components/
+          profile-form.tsx
+  shared/                          # ⚠️ ONLY for 2+ features
+    components/
+      product-card.tsx             # 🌍 Used across shop, cart, wishlist
+```
+
+**What this structure screams:**
+- "I'm an e-commerce application"
+- "I have authentication with login and registration"
+- "I have shopping, cart, and wishlist functionality"
+- "I have a user dashboard with profiles"
+
+**A new developer can:**
+- Instantly understand the business domains
+- Know where to find authentication logic (in `(auth)/`)
+- See what the shop feature includes (shop listing, cart, wishlist)
+- Understand shared vs. feature-specific components at a glance
+
+### Angular Example
+
+From the Angular Scope Rule Architect:
+
+```typescript
+src/
+  app/
+    features/
+      authentication/              # 👀 Authentication feature
+        authentication.ts          # Main component
+        components/                # 📍 Auth-specific components
+          login-form.ts
+          register-form.ts
+          password-reset.ts
+        services/                  # 📍 Auth-specific services
+          auth.ts
+        guards/                    # 📍 Auth guards
+          auth-guard.ts
+        signals/                   # 📍 Auth state
+          auth-state.ts
+      product-catalog/             # 👀 Product browsing feature
+        product-catalog.ts         # Main component
+        components/                # 📍 Catalog-specific components
+          product-grid.ts
+          product-search.ts
+          category-filter.ts
+        services/
+          product.ts
+        signals/
+          catalog-state.ts
+      shopping-cart/               # 👀 Shopping cart feature
+        shopping-cart.ts           # Main component
+        components/                # 📍 Cart-specific components
+          cart-items-list.ts
+          checkout-button.ts
+        services/
+          cart.ts
+        signals/
+          cart-state.ts
+      user-profile/                # 👀 User profile feature
+        user-profile.ts            # Main component
+        components/                # 📍 Profile-specific components
+          profile-editor.ts
+          order-history.ts
+        services/
+          profile.ts
+      shared/                      # ⚠️ ONLY for 2+ feature usage
+        components/
+          product-card.ts          # 🌍 Used in catalog and cart
+          rating-stars.ts          # 🌍 Used in multiple features
+        pipes/
+          currency-format.ts       # 🌍 Global pipe
+```
+
+**What this structure screams:**
+- "I'm an e-commerce application"
+- "I have user authentication"
+- "I have a product catalog with search and filtering"
+- "I have a shopping cart system"
+- "I support user profiles with order history"
+
+### Astro Example
+
+From the Astro Scope Rule Architect:
+
+```typescript
+src/
+  pages/
+    blog/                          # 👀 Blog feature
+      [...slug].astro              # Dynamic blog routes
+      index.astro                  # Blog listing
+      components/                  # 📍 Blog-specific components
+        blog-card.astro
+        blog-sidebar.astro
+        comment-form.tsx           # Interactive island
+      utils/
+        blog-helpers.ts
+    shop/                          # 👀 E-commerce feature
+      products/
+        [slug].astro               # Product pages
+        index.astro                # Product listing
+      cart/
+        index.astro                # Shopping cart
+      components/                  # 📍 Shop-specific components
+        product-card.astro
+        add-to-cart.tsx            # Interactive island
+        product-filter.vue         # Vue island
+      utils/
+        shop-helpers.ts
+    about/                         # 👀 About section
+      index.astro
+      team/
+        index.astro
+      components/                  # 📍 About-specific components
+        team-member.astro
+        contact-form.svelte        # Svelte island
+  content/                         # 👀 Content types
+    blog/                          # Blog posts
+    products/                      # Product data
+    team/                          # Team members
+  components/                      # ⚠️ ONLY for 2+ page usage
+    ui/
+      Button.astro
+      Modal.tsx
+    layout/
+      Header.astro
+      Footer.astro
+    islands/
+      Newsletter.tsx               # 🌍 Used across multiple pages
+```
+
+**What this structure screams:**
+- "I'm a content-driven site with e-commerce"
+- "I have a blog with comments"
+- "I have a shop with products and cart"
+- "I have an about section with team information"
+- "I use islands architecture for selective interactivity"
+
+## Contrast: Technical vs. Business Architecture
+
+<CardGroup cols={2}>
+  <Card title="❌ Technical Focus" icon="code">
+    ```typescript
+    src/
+      components/
+        Button.tsx
+        Card.tsx
+        LoginForm.tsx
+        ProductCard.tsx
+        CartItem.tsx
+      services/
+        auth.ts
+        products.ts
+        cart.ts
+      hooks/
+        useAuth.ts
+        useCart.ts
+    ```
+    **Tells you:** This is a React app
+    
+    **Doesn't tell you:** What the app does
+  </Card>
+  <Card title="✅ Business Focus" icon="building">
+    ```typescript
+    src/
+      features/
+        authentication/
+          components/
+          services/
+        product-catalog/
+          components/
+          services/
+        shopping-cart/
+          components/
+          services/
+      shared/
+        components/
+    ```
+    **Tells you:** This is an e-commerce platform
+    
+    **Also tells you:** The major business capabilities
+  </Card>
+</CardGroup>
+
+## Principles of Screaming Architecture
+
+### 1. Feature Names Describe Business Functionality
+
+<Tabs>
+  <Tab title="Good">
+    - `authentication/` - clearly a login/signup feature
+    - `product-catalog/` - clearly product browsing
+    - `shopping-cart/` - clearly cart functionality
+    - `user-profile/` - clearly user account management
+    - `order-history/` - clearly past orders
+  </Tab>
+  <Tab title="Bad">
+    - `components/` - tells nothing about domain
+    - `forms/` - technical concern, not business domain
+    - `feature-1/` - meaningless naming
+    - `module-a/` - abstract and unclear
+    - `widgets/` - technical categorization
+  </Tab>
+</Tabs>
+
+### 2. Structure Mirrors User Mental Model
+
+Users think in terms of:
+- "I want to log in" → `authentication/`
+- "I want to browse products" → `product-catalog/`
+- "I want to manage my cart" → `shopping-cart/`
+- "I want to view my profile" → `user-profile/`
+
+Your structure should match this mental model.
+
+### 3. Container Components Match Feature Names
+
+From the React/Angular agents:
+
+<Tabs>
+  <Tab title="Angular">
+    ```typescript
+    features/
+      shopping-cart/
+        shopping-cart.ts           # ✅ Container matches feature
+        components/
+          cart-items-list.ts
+          checkout-button.ts
+    ```
+  </Tab>
+  <Tab title="Next.js">
+    ```typescript
+    app/
+      (shop)/                      # ✅ Route group matches feature
+        shop/
+          page.tsx                 # Main shop page
+        cart/
+          page.tsx                 # Cart page within shop feature
+    ```
+  </Tab>
+  <Tab title="React">
+    ```typescript
+    features/
+      shopping-cart/
+        shopping-cart.tsx          # ✅ Container matches feature
+        components/
+          cart-item.tsx
+          cart-summary.tsx
+    ```
+  </Tab>
+</Tabs>
+
+### 4. Immediate Understanding for New Developers
+
+A new developer should be able to:
+
+<Steps>
+  <Step title="Scan the directory tree">
+    Look at the top-level feature folders
+  </Step>
+  <Step title="Understand the domain">
+    Know what business capabilities exist
+  </Step>
+  <Step title="Find relevant code">
+    Navigate directly to the feature they need to work on
+  </Step>
+  <Step title="See relationships">
+    Understand which code is shared vs. feature-specific
+  </Step>
+</Steps>
+
+## How the Scope Rule Enables Screaming Architecture
+
+The Scope Rule is what makes screaming architecture possible:
+
+<CardGroup cols={2}>
+  <Card title="Local Code" icon="folder">
+    **1 feature = local placement**
+    
+    Feature-specific code stays within the feature, making it obvious what code belongs to what business capability.
+  </Card>
+  <Card title="Shared Code" icon="share-nodes">
+    **2+ features = shared placement**
+    
+    Truly shared code lives in `shared/`, making it obvious what's reusable across the application.
+  </Card>
+</CardGroup>
+
+This creates a structure where:
+- Business domains are obvious (feature folders)
+- Relationships are clear (shared vs. local)
+- Intent is communicated (names describe functionality)
+
+## Testing the Architecture
+
+<Tip>
+**The "New Developer" Test**
+
+Show your file tree to a developer unfamiliar with your codebase. Within 30 seconds, they should be able to answer:
+1. What does this application do?
+2. What are the major features?
+3. Where would I find code for [specific feature]?
+
+If they can't answer these questions, your architecture isn't screaming.
+</Tip>
+
+## Common Questions
+
+<AccordionGroup>
+  <Accordion title="Doesn't this mean reorganizing the entire codebase?">
+    Initially, yes. But this is a one-time cost that pays dividends forever. Once your architecture screams, maintenance becomes dramatically easier. Every new feature added reinforces the pattern instead of degrading it.
+  </Accordion>
+  
+  <Accordion title="What if I have shared UI components like Button, Input, etc.?">
+    These go in `shared/components/ui/` or similar. They're used by 2+ features, so they follow the Scope Rule. The difference is they're properly organized as shared infrastructure, not dumped in a global `components/` folder mixed with business logic.
+  </Accordion>
+  
+  <Accordion title="How granular should features be?">
+    Features should represent cohesive business capabilities from the user's perspective. In an e-commerce app: `product-catalog/`, `shopping-cart/`, `checkout/`, `order-history/` are all separate features. In Next.js, these might be route groups. In Angular, they're feature modules or standalone features.
+  </Accordion>
+  
+  <Accordion title="Can I still use framework conventions?">
+    Yes! In Next.js, use App Router conventions (`page.tsx`, `layout.tsx`, route groups). In Angular, use standalone components and modern patterns. In Astro, use file-based routing. Screaming architecture works within framework conventions, not against them.
+  </Accordion>
+</AccordionGroup>
+
+## Further Reading
+
+<CardGroup cols={2}>
+  <Card title="The Scope Rule" href="/concepts/scope-rule">
+    Learn the fundamental principle that enables screaming architecture
+  </Card>
+  <Card title="Co-location" href="/concepts/co-location">
+    Understand how keeping related code together supports clear architecture
+  </Card>
+</CardGroup>

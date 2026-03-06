@@ -1,0 +1,288 @@
+---
+title: E-commerce Application
+description: Complete architectural structure for an e-commerce application following the Scope Rule
+---
+
+## Overview
+
+This example demonstrates how to structure a complete e-commerce application with shopping features, user authentication, and product management. The architecture clearly communicates business functionality through its organization.
+
+## Project Structure
+
+The Scope Rule determines every placement decision: code used by 2+ features goes in shared directories, code used by 1 feature stays local.
+
+<Tabs>
+  <Tab title="Next.js">
+    ```
+    src/
+      app/
+        (auth)/                        # Authentication feature
+          login/
+            page.tsx                   # /login route
+            _components/               # Login-specific components
+              login-form.tsx
+          register/
+            page.tsx                   # /register route
+            _components/               # Register-specific components
+              register-form.tsx
+          _components/                 # Shared auth components
+            social-login.tsx           # Used by login & register
+          _hooks/                      # Auth hooks
+            use-auth.ts
+          _actions/                    # Auth server actions
+            auth-actions.ts
+          layout.tsx                   # Auth layout
+
+        (shop)/                        # E-commerce feature
+          shop/
+            page.tsx                   # /shop route
+            _components/               # Shop-specific components
+              product-list.tsx
+              product-filter.tsx
+          cart/
+            page.tsx                   # /cart route
+            _components/               # Cart-specific components
+              cart-item.tsx
+              cart-summary.tsx
+          wishlist/
+            page.tsx                   # /wishlist route
+            _components/               # Wishlist-specific components
+              wishlist-item.tsx
+              wishlist-grid.tsx
+          _hooks/                      # Shop hooks
+            use-products.ts
+            use-cart.ts
+            use-wishlist.ts
+          _actions/                    # Shop server actions
+            product-actions.ts
+            cart-actions.ts
+            wishlist-actions.ts
+          layout.tsx                   # Shop layout
+
+        api/                           # API routes
+          auth/route.ts
+          products/route.ts
+          cart/route.ts
+
+        page.tsx                       # Home page
+        layout.tsx                     # Root layout
+
+      shared/                          # ONLY for 2+ route groups
+        components/
+          ui/                          # Reusable UI components
+            button.tsx
+            card.tsx
+            input.tsx
+          product-card.tsx             # Used in shop, cart, wishlist
+          cart-widget.tsx              # Used in multiple routes
+        hooks/
+          use-local-storage.ts
+          use-debounce.ts
+
+      lib/                             # Utilities
+        auth.ts
+        db.ts
+        utils.ts
+        validations.ts
+    ```
+  </Tab>
+
+  <Tab title="Angular">
+    ```
+    src/
+      app/
+        features/
+          auth/
+            login/
+              login.ts                 # Main component
+              components/              # Login-specific
+                login-form.ts
+            register/
+              register.ts              # Main component
+              components/              # Register-specific
+                register-form.ts
+            components/                # Shared auth components
+              social-login.ts          # Used by login & register
+            services/
+              auth.ts
+            guards/
+              auth.guard.ts
+            signals/
+              auth.signal.ts
+
+          shop/
+            products/
+              products.ts              # Main component
+              components/              # Product-specific
+                product-list.ts
+                product-filter.ts
+            cart/
+              cart.ts                  # Main component
+              components/              # Cart-specific
+                cart-item.ts
+                cart-summary.ts
+            wishlist/
+              wishlist.ts              # Main component
+              components/              # Wishlist-specific
+                wishlist-item.ts
+                wishlist-grid.ts
+            services/
+              product.ts
+              cart.ts
+              wishlist.ts
+            signals/
+              shop.signal.ts
+
+          shared/                      # ONLY for 2+ features
+            components/
+              product-card.ts          # Used in shop, cart, wishlist
+              cart-widget.ts
+            pipes/
+              currency.ts
+            directives/
+              tooltip.ts
+
+        core/                          # Singleton services
+          services/
+            api.ts
+            auth.ts
+          interceptors/
+            auth.interceptor.ts
+
+        app.ts                         # Root component
+        routes.ts
+    ```
+  </Tab>
+
+  <Tab title="Astro">
+    ```
+    src/
+      pages/
+        shop/
+          products/
+            [slug].astro               # Product detail
+            index.astro                # Product listing
+          cart/
+            index.astro                # Cart page
+          wishlist/
+            index.astro                # Wishlist page
+          components/                  # Shop-specific
+            product-card.astro         # Static product display
+            add-to-cart.tsx            # Client island
+            product-filter.vue         # Client island
+            wishlist-button.tsx        # Client island
+          utils/
+            shop-helpers.ts
+
+        auth/
+          login/
+            index.astro                # Login page
+          register/
+            index.astro                # Register page
+          components/                  # Auth-specific
+            login-form.tsx             # Client island
+            register-form.tsx          # Client island
+            social-login.tsx           # Client island
+
+        index.astro                    # Home page
+
+      components/                      # ONLY for 2+ pages
+        ui/
+          Button.astro
+          Card.astro
+          Modal.tsx                    # Client island
+        layout/
+          Header.astro
+          Footer.astro
+          CartWidget.tsx               # Used in multiple pages
+
+      content/
+        products/
+          config.ts                    # Product schema
+          product-1.md
+
+      layouts/
+        ShopLayout.astro
+        AuthLayout.astro
+        BaseLayout.astro
+
+      lib/
+        api.ts
+        utils.ts
+    ```
+  </Tab>
+</Tabs>
+
+## Key Architectural Decisions
+
+### Product Card Component
+
+**Usage:** Shop page, Cart page, Wishlist page (3 locations)
+
+**Decision:** Shared component
+
+**Reasoning:** Used by multiple features within the shop domain. This is a perfect example of the Scope Rule - since it's used in 2+ places, it MUST go in the shared directory.
+
+### Cart Actions
+
+**Usage:** Cart page only
+
+**Decision:** Local to cart feature
+
+**Reasoning:** These actions are specific to cart functionality. Even though the cart is accessed from multiple places, the cart-specific logic stays local.
+
+### Social Login Component
+
+**Usage:** Login page, Register page
+
+**Decision:** Shared within auth feature
+
+**Reasoning:** Used by 2 pages within the same feature group, so it goes in the feature's shared components directory.
+
+## Screaming Architecture Benefits
+
+Looking at this structure, you immediately understand:
+
+- This is an e-commerce application
+- It has authentication features (login, register)
+- It has shopping features (products, cart, wishlist)
+- Each feature is self-contained with its own components and logic
+- Shared code is clearly marked and justified by 2+ usage
+
+## Scalability Patterns
+
+<CardGroup cols={2}>
+  <Card title="Easy Feature Addition" icon="plus">
+    Add new features like "orders" or "reviews" as new route groups or feature directories without affecting existing code.
+  </Card>
+  
+  <Card title="Clear Dependencies" icon="link">
+    Shared components make dependencies explicit. You know exactly what's being reused across features.
+  </Card>
+  
+  <Card title="Team Ownership" icon="users">
+    Each feature can be owned by a different team. Clear boundaries prevent conflicts.
+  </Card>
+  
+  <Card title="Refactoring Safety" icon="shield">
+    Move entire features as units. Local code moves together, reducing the risk of breaking changes.
+  </Card>
+</CardGroup>
+
+## Migration Strategy
+
+If you have an existing e-commerce application with everything in a single `components/` folder:
+
+1. **Identify features** - Group routes by business functionality (auth, shop, etc.)
+2. **Analyze usage** - For each component, count how many features use it
+3. **Move local first** - Start by moving components used by only 1 feature
+4. **Extract shared** - Move components used by 2+ features to shared directories
+5. **Update imports** - Use path aliases to keep imports clean
+6. **Validate structure** - Ensure the structure "screams" what your app does
+
+## Common Anti-patterns to Avoid
+
+- **Everything in shared** - Don't put components in shared "just in case"
+- **Premature abstraction** - Start local, move to shared only when needed
+- **Technical naming** - Use business terms ("shop", "cart") not technical ones ("data", "views")
+- **Deep nesting** - Keep structures flat within features for easy navigation

@@ -1,0 +1,410 @@
+---
+title: Blog & Content Site
+description: Content-driven architecture for blogs, documentation sites, and marketing pages
+---
+
+## Overview
+
+Blog and content sites have unique architectural needs focused on content management, static generation, and SEO optimization. This example shows how to structure a content-heavy application following the Scope Rule.
+
+## Project Structure
+
+<Tabs>
+  <Tab title="Astro">
+    Astro is the ideal framework for content sites with its islands architecture and content collections.
+
+    ```
+    src/
+      pages/
+        blog/
+          [...slug].astro              # Dynamic blog routes
+          index.astro                  # Blog listing page
+          components/                  # Blog-specific components
+            blog-card.astro           # Static blog preview
+            blog-sidebar.astro        # Static sidebar
+            comment-form.tsx          # Client island for comments
+            social-share.tsx          # Client island for sharing
+          utils/
+            blog-helpers.ts           # Blog-specific utilities
+            date-formatting.ts
+
+        docs/
+          [...slug].astro              # Dynamic docs routes
+          index.astro                  # Docs home
+          components/                  # Docs-specific components
+            doc-navigation.astro      # Static navigation
+            code-block.astro          # Static code display
+            search-box.tsx            # Client island for search
+          utils/
+            docs-helpers.ts
+
+        about/
+          index.astro                  # About page
+          team/
+            index.astro                # Team page
+          components/                  # About section components
+            team-member.astro         # Static team cards
+            contact-form.svelte       # Client island
+
+        index.astro                    # Home page
+        404.astro
+
+      components/                      # ONLY for 2+ pages
+        ui/
+          Button.astro                # Used across site
+          Card.astro
+          Modal.tsx                   # Client island
+        layout/
+          Header.astro                # Site header
+          Footer.astro                # Site footer
+          SEO.astro                   # SEO meta component
+        islands/                      # Interactive components
+          Newsletter.tsx              # Used in multiple pages
+          ThemeToggle.tsx            # Dark mode toggle
+          SearchBox.vue              # Search functionality
+
+      content/                        # Content collections
+        blog/
+          config.ts                   # Blog schema
+          2024-01-15-first-post.md
+          2024-01-20-second-post.mdx
+        docs/
+          config.ts                   # Docs schema
+          getting-started.md
+          advanced-features.mdx
+        team/
+          config.ts                   # Team schema
+          john-doe.md
+          jane-smith.md
+
+      layouts/
+        BlogLayout.astro              # Layout for blog
+        DocsLayout.astro              # Layout for docs
+        BaseLayout.astro              # Base template
+
+      lib/
+        utils.ts
+        constants.ts
+        rss.ts                        # RSS feed generation
+
+      styles/
+        global.css
+        blog.css                      # Blog-specific styles
+        docs.css                      # Docs-specific styles
+    ```
+  </Tab>
+
+  <Tab title="Next.js">
+    Next.js App Router with MDX integration for content management.
+
+    ```
+    src/
+      app/
+        (marketing)/                   # Marketing pages
+          page.tsx                     # Home page
+          about/
+            page.tsx
+            _components/
+              team-grid.tsx
+              contact-form.tsx
+          _components/                 # Marketing shared
+            hero.tsx
+            cta-section.tsx
+
+        (blog)/                        # Blog feature
+          blog/
+            page.tsx                   # Blog listing
+            [slug]/
+              page.tsx                 # Blog post
+            _components/               # Blog-specific
+              blog-card.tsx
+              blog-sidebar.tsx
+              comment-section.tsx
+          authors/
+            [slug]/
+              page.tsx                 # Author page
+            _components/
+              author-card.tsx
+          _components/                 # Shared blog components
+            social-share.tsx         # Used by posts & authors
+          _actions/
+            blog-actions.ts
+          layout.tsx
+
+        (docs)/                        # Documentation
+          docs/
+            [[...slug]]/
+              page.tsx                 # Docs pages
+            _components/
+              doc-navigation.tsx
+              table-of-contents.tsx
+              code-block.tsx
+          layout.tsx
+
+      shared/
+        components/
+          ui/
+            button.tsx
+            card.tsx
+          newsletter.tsx             # Used in blog & marketing
+          search-box.tsx             # Used in blog & docs
+        hooks/
+          use-theme.ts
+          use-search.ts
+
+      content/
+        blog/
+          first-post.mdx
+          second-post.mdx
+        docs/
+          getting-started.mdx
+          api-reference.mdx
+
+      lib/
+        mdx.ts
+        rss.ts
+        utils.ts
+    ```
+  </Tab>
+
+  <Tab title="Angular">
+    Angular with markdown rendering and content management.
+
+    ```
+    src/
+      app/
+        features/
+          blog/
+            blog.ts                    # Main blog component
+            post/
+              post.ts                  # Post detail
+              components/
+                comment-section.ts
+                social-share.ts
+            list/
+              list.ts                  # Post listing
+              components/
+                blog-card.ts
+                pagination.ts
+            components/                # Shared blog
+              blog-sidebar.ts
+            services/
+              blog.ts
+            signals/
+              blog.signal.ts
+
+          docs/
+            docs.ts                    # Main docs component
+            components/
+              doc-navigation.ts
+              table-of-contents.ts
+              code-block.ts
+            services/
+              docs.ts
+
+          about/
+            about.ts
+            components/
+              team-grid.ts
+              contact-form.ts
+
+          shared/                      # ONLY for 2+ features
+            components/
+              newsletter.ts            # Used in blog & home
+              search-box.ts            # Used in blog & docs
+
+        core/
+          services/
+            markdown.ts
+            api.ts
+
+        app.ts
+        routes.ts
+    ```
+  </Tab>
+</Tabs>
+
+## Key Architectural Decisions
+
+### Newsletter Component
+
+**Usage:** Blog sidebar, Footer, About page (3 locations)
+
+**Decision:** Shared component
+
+**Reasoning:** Used across multiple features (blog, marketing, about). Perfect candidate for shared components.
+
+### Comment Form
+
+**Usage:** Blog posts only
+
+**Decision:** Local to blog feature
+
+**Reasoning:** Specific to blog functionality. Even though every blog post uses it, it's still within a single feature.
+
+### Search Box
+
+**Usage:** Blog listing, Documentation (2 locations)
+
+**Decision:** Shared component
+
+**Reasoning:** Crosses feature boundaries. Used in both blog and docs sections.
+
+### Social Share Buttons
+
+**Usage:** Blog posts, Author pages (2 locations within blog feature)
+
+**Decision:** Shared within blog feature
+
+**Reasoning:** Used by multiple pages within the same feature group, so it goes in the blog's shared components.
+
+## Content Collections Pattern (Astro)
+
+Astro's content collections provide type-safe content management:
+
+```typescript
+// src/content/blog/config.ts
+import { defineCollection, z } from 'astro:content';
+
+const blogCollection = defineCollection({
+  type: 'content',
+  schema: z.object({
+    title: z.string(),
+    description: z.string(),
+    publishDate: z.date(),
+    author: z.string(),
+    tags: z.array(z.string()),
+    draft: z.boolean().default(false),
+  }),
+});
+
+export const collections = {
+  blog: blogCollection,
+};
+```
+
+Usage in pages:
+
+```astro
+---
+// src/pages/blog/[...slug].astro
+import { getCollection } from 'astro:content';
+import BlogLayout from '../../layouts/BlogLayout.astro';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog');
+  return posts.map((post) => ({
+    params: { slug: post.slug },
+    props: post,
+  }));
+}
+
+const post = Astro.props;
+const { Content } = await post.render();
+---
+
+<BlogLayout title={post.data.title}>
+  <Content />
+</BlogLayout>
+```
+
+## Performance Optimization
+
+<CardGroup cols={2}>
+  <Card title="Static Generation" icon="bolt">
+    Pre-render all blog posts and documentation at build time for instant page loads.
+  </Card>
+  
+  <Card title="Minimal JavaScript" icon="code">
+    Use static components by default. Only hydrate interactive elements like comments and search.
+  </Card>
+  
+  <Card title="Content Collections" icon="database">
+    Type-safe content with automatic validation and optimized queries.
+  </Card>
+  
+  <Card title="Image Optimization" icon="image">
+    Automatic image optimization with proper sizing and lazy loading.
+  </Card>
+</CardGroup>
+
+## SEO Best Practices
+
+### Meta Component
+
+Create a reusable SEO component (this is shared because it's used by all pages):
+
+```astro
+---
+// src/components/layout/SEO.astro
+export interface Props {
+  title: string;
+  description: string;
+  image?: string;
+  article?: boolean;
+}
+
+const { title, description, image, article } = Astro.props;
+const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+---
+
+<head>
+  <title>{title}</title>
+  <meta name="description" content={description} />
+  <link rel="canonical" href={canonicalURL} />
+  
+  <!-- Open Graph -->
+  <meta property="og:type" content={article ? 'article' : 'website'} />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  {image && <meta property="og:image" content={image} />}
+  
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content={title} />
+  <meta name="twitter:description" content={description} />
+  {image && <meta name="twitter:image" content={image} />}
+</head>
+```
+
+## Islands Architecture
+
+For content sites, most components should be static. Use client islands only for:
+
+- **Comment sections** - User interaction required
+- **Search functionality** - Real-time filtering
+- **Newsletter forms** - Form validation and submission
+- **Theme toggles** - Client-side preference storage
+- **Social sharing** - External API interactions
+
+```astro
+---
+// Static by default
+import BlogCard from './components/blog-card.astro';
+// Interactive islands
+import CommentForm from './components/comment-form.tsx';
+import Newsletter from '../components/islands/Newsletter.tsx';
+---
+
+<article>
+  <!-- Static content -->
+  <BlogCard {...post} />
+  
+  <!-- Interactive island with lazy loading -->
+  <CommentForm client:visible postId={post.id} />
+  
+  <!-- Newsletter in sidebar -->
+  <Newsletter client:idle />
+</article>
+```
+
+## Migration from WordPress or CMS
+
+If migrating from a traditional CMS:
+
+1. **Export content** - Convert posts to Markdown/MDX files
+2. **Structure by feature** - Organize by content type (blog, docs, pages)
+3. **Identify shared components** - Headers, footers, CTAs used everywhere
+4. **Keep content local** - Blog-specific components stay with blog
+5. **Optimize for static** - Pre-render everything possible
+6. **Add interactivity** - Use islands for forms, comments, search

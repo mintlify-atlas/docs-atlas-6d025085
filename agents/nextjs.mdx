@@ -1,0 +1,431 @@
+---
+title: 'Next.js Scope Rule Architect'
+description: 'Architectural agent for Next.js 15+ projects using App Router, Server Components, and the Scope Rule pattern'
+icon: 'n'
+---
+
+## Overview
+
+The Next.js Scope Rule Architect is a specialized agent for making architectural decisions in Next.js/TypeScript projects. It enforces the **Scope Rule pattern** and **Screaming Architecture principles** while leveraging Next.js 15+ features including App Router, Server Components, Server Actions, and advanced performance optimizations.
+
+<Note>
+  **Target Framework:** Next.js 15+ with App Router, TypeScript, Tailwind CSS, ESLint, Prettier, and Husky
+</Note>
+
+## When to Use This Agent
+
+Invoke the Next.js Scope Rule Architect when you need to:
+
+<CardGroup cols={2}>
+  <Card title="New Project Setup" icon="plus">
+    Setting up a new Next.js project with App Router, proper architecture, and the Scope Rule pattern
+  </Card>
+  <Card title="Component Placement" icon="folder-tree">
+    Determining where to place components with Server/Client Component considerations
+  </Card>
+  <Card title="Architecture Refactoring" icon="arrows-rotate">
+    Restructuring existing codebases to follow App Router and Scope Rule principles
+  </Card>
+  <Card title="Pages Router Migration" icon="code-branch">
+    Converting legacy Pages Router applications to modern App Router architecture
+  </Card>
+</CardGroup>
+
+### Example Scenarios
+
+```typescript
+// Scenario 1: New Project Setup
+user: "I need to set up a new e-commerce project with shopping cart and user authentication features"
+assistant: "I'll use the scope-rule-architect-nextjs agent to set up the project structure"
+
+// Scenario 2: Component Placement
+user: "I have a ProductCard component used in both shop page and wishlist. Where should I put it?"
+assistant: "Let me use the scope-rule-architect-nextjs agent to determine the correct placement"
+// Result: 2+ features = shared/components with Server/Client considerations
+
+// Scenario 3: Modernization
+user: "My Next.js app has all components in a single components folder. How should I restructure this?"
+assistant: "I'll invoke the scope-rule-architect-nextjs agent to restructure with App Router"
+```
+
+## Core Next.js 15 Principles
+
+### 1. App Router Architecture First
+
+- **ALL routes MUST use App Router** - never use Pages Router for new projects
+- Leverage Server Components by default, Client Components only when necessary
+- Use proper file conventions: `page.tsx`, `layout.tsx`, `loading.tsx`, `error.tsx`, `not-found.tsx`
+- Implement route groups `(group-name)` for organization without affecting URL structure
+- Use private folders `_folder` to opt out of routing system
+
+### 2. Server-First Architecture
+
+<Note>
+  **Default:** Server Components are the default. Add `"use client"` only when required for interactivity, browser APIs, or React hooks.
+</Note>
+
+- Optimize data fetching at the server level
+- Implement streaming with `loading.tsx` and Suspense boundaries
+- Use Server Actions for form handling and mutations
+- Leverage static generation and ISR for performance
+- Use DAL (Data Access Layer) patterns to separate data logic
+- Use `server-only` package to prevent accidental client usage (MUST for Server Actions)
+
+### 3. The Scope Rule
+
+<Warning>
+  **This rule is absolute and non-negotiable:**
+  - Code used by **2+ features** → MUST go in **global/shared** directories
+  - Code used by **1 feature** → MUST stay **local** in that feature
+  - **NO EXCEPTIONS**
+</Warning>
+
+### 4. Screaming Architecture
+
+Your project structure must IMMEDIATELY communicate what the application does:
+
+- Feature names describe **business functionality**, not technical implementation
+- Directory structure tells the story at first glance
+- Route structure mirrors business logic, not technical concerns
+
+## Project Structure
+
+Here's the standard Next.js 15 project structure following the Scope Rule:
+
+```plaintext
+src/
+  app/
+    (auth)/                            # Auth feature route group
+      login/
+        page.tsx                       # /login route
+        _components/                   # Private: login-specific components
+          login-form.tsx
+      register/
+        page.tsx                       # /register route
+        _components/                   # Private: register-specific components
+          register-form.tsx
+      _components/                     # Private: shared auth components
+        social-login.tsx               # Used by login AND register
+      _hooks/                          # Private: auth hooks
+        use-auth.ts
+      _actions/                        # Private: auth server actions
+        auth-actions.ts
+      _types.ts                        # Private: auth types
+      _utils.ts                        # Private: auth utilities
+      layout.tsx                       # Auth layout
+    
+    (dashboard)/                       # Dashboard feature route group
+      dashboard/
+        page.tsx                       # /dashboard route
+        loading.tsx                    # Loading UI
+        error.tsx                      # Error UI
+        _components/                   # Private: dashboard-specific
+          stats-card.tsx
+          dashboard-grid.tsx
+      profile/
+        page.tsx                       # /profile route
+        _components/                   # Private: profile-specific
+          profile-form.tsx
+          avatar-upload.tsx
+      _hooks/                          # Private: dashboard hooks
+        use-dashboard.ts
+        use-profile.ts
+      _actions/                        # Private: dashboard server actions
+        profile-actions.ts
+      _types.ts                        # Private: dashboard types
+      layout.tsx                       # Dashboard layout
+    
+    (shop)/                            # Shop feature route group
+      shop/
+        page.tsx                       # /shop route
+        _components/                   # Private: shop-specific
+          product-list.tsx
+          product-filter.tsx
+      cart/
+        page.tsx                       # /cart route
+        _components/                   # Private: cart-specific
+          cart-item.tsx
+          cart-summary.tsx
+      wishlist/
+        page.tsx                       # /wishlist route
+        _components/                   # Private: wishlist-specific
+          wishlist-item.tsx
+          wishlist-grid.tsx
+      _hooks/                          # Private: shop hooks
+        use-products.ts
+        use-cart.ts
+        use-wishlist.ts
+      _actions/                        # Private: shop server actions
+        product-actions.ts
+        cart-actions.ts
+        wishlist-actions.ts
+      _types.ts                        # Private: shop types
+      layout.tsx                       # Shop layout
+    
+    api/                               # API routes
+      auth/route.ts                    # Uses (auth)/_actions/auth-actions.ts
+      products/route.ts                # Uses (shop)/_actions/product-actions.ts
+      cart/route.ts                    # Uses (shop)/_actions/cart-actions.ts
+    
+    page.tsx                           # Home page
+    layout.tsx                         # Root layout
+    loading.tsx                        # Global loading
+    error.tsx                          # Global error
+    not-found.tsx                      # 404 page
+    globals.css                        # Global styles
+  
+  shared/                              # ONLY for 2+ route group usage
+    components/
+      ui/                              # Reusable UI components
+        button.tsx
+        card.tsx
+        input.tsx
+      product-card.tsx                 # Used across shop, cart, wishlist
+      cart-widget.tsx                  # Used in multiple route groups
+    hooks/                             # Global custom hooks
+      use-local-storage.ts
+      use-debounce.ts
+    actions/                           # Shared Server Actions
+    types/                             # Global TypeScript types
+      api.ts
+  
+  lib/                                 # Utilities and configurations
+    auth.ts                            # Auth configuration
+    db.ts                              # Database connection
+    utils.ts                           # Utility functions
+    validations.ts                     # Zod schemas
+  
+  styles/                              # Additional styles
+    components.css
+```
+
+### Path Aliases Configuration
+
+```json tsconfig.json
+{
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/components/*": ["./src/components/*"],
+      "@/features/*": ["./src/features/*"],
+      "@/lib/*": ["./src/lib/*"],
+      "@/hooks/*": ["./src/hooks/*"],
+      "@/actions/*": ["./src/actions/*"],
+      "@/types/*": ["./src/types/*"]
+    }
+  }
+}
+```
+
+## Component Templates
+
+### Server Component Pattern
+
+```typescript page.tsx
+import { Suspense } from 'react';
+import { getUser } from '@/lib/auth';
+import { FeatureCard } from './feature-card';
+import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
+
+// Server Component by default (no "use client")
+export default async function FeaturePage() {
+  const user = await getUser(); // Server-side data fetching
+
+  return (
+    <div>
+      <h1>Feature Page</h1>
+      <Suspense fallback={<LoadingSkeleton />}>
+        <FeatureCard user={user} />
+      </Suspense>
+    </div>
+  );
+}
+```
+
+### Client Component Pattern
+
+```typescript feature-component.tsx
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+
+interface FeatureComponentProps {
+  initialData: FeatureData;
+}
+
+export function FeatureComponent({ initialData }: FeatureComponentProps) {
+  const router = useRouter();
+  const [data, setData] = useState(initialData);
+  const [loading, setLoading] = useState(false);
+
+  const handleAction = async () => {
+    setLoading(true);
+    try {
+      // Client-side logic
+      router.push('/dashboard');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div>
+      <Button onClick={handleAction} disabled={loading}>
+        {loading ? 'Processing...' : 'Action'}
+      </Button>
+    </div>
+  );
+}
+```
+
+### Server Action Pattern
+
+```typescript feature-actions.ts
+import "server-only";
+import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
+
+const FeatureSchema = z.object({
+  name: z.string().min(1),
+  description: z.string().min(10),
+});
+
+export async function createFeature(formData: FormData) {
+  const result = FeatureSchema.safeParse({
+    name: formData.get("name"),
+    description: formData.get("description"),
+  });
+
+  if (!result.success) {
+    return { error: "Invalid data" };
+  }
+
+  try {
+    // Database operation
+    await saveFeature(result.data);
+
+    // Revalidate and redirect
+    revalidatePath("/features");
+    redirect("/features");
+  } catch (error) {
+    return { error: "Failed to create feature" };
+  }
+}
+```
+
+<Warning>
+  Always use the `server-only` package for Server Actions to prevent accidental client-side usage.
+</Warning>
+
+## Decision Framework
+
+The agent follows this systematic approach when analyzing component placement:
+
+1. **Identify component type**: Server Component, Client Component, or hybrid
+2. **Count usage**: Identify exactly how many features/routes use the component
+3. **Apply the rule**: 1 feature = local, 2+ features = shared/global
+4. **Consider performance**: Optimize bundle splitting and server-side rendering
+5. **Document decision**: Explain WHY with Next.js context
+
+## Performance and SEO Optimization
+
+The agent optimizes for:
+
+<CardGroup cols={2}>
+  <Card title="Core Web Vitals" icon="gauge-high">
+    Minimize layout shifts, optimize loading times
+  </Card>
+  <Card title="Bundle Splitting" icon="scissors">
+    Keep client-side JavaScript minimal
+  </Card>
+  <Card title="Server Rendering" icon="server">
+    Maximize SSR for better SEO and performance
+  </Card>
+  <Card title="Streaming" icon="water">
+    Use Suspense boundaries and loading states
+  </Card>
+  <Card title="Caching" icon="database">
+    Implement proper caching with revalidation
+  </Card>
+  <Card title="Image Optimization" icon="image">
+    Use Next.js Image component with proper sizing
+  </Card>
+</CardGroup>
+
+## Quality Checks
+
+Before finalizing any architectural decision:
+
+1. **Scope verification**: Feature usage correctly counted?
+2. **Next.js compliance**: Using Server Components appropriately?
+3. **Performance impact**: Optimizing bundle size and server rendering?
+4. **Route organization**: Do route groups and file structure make sense?
+5. **Screaming test**: New developers understand app structure?
+6. **SEO optimization**: Leveraging static generation appropriately?
+7. **Future-proofing**: Structure scales with Next.js evolution?
+
+## Next.js-Specific Edge Cases
+
+<AccordionGroup>
+  <Accordion title="Server vs Client Boundaries">
+    Clearly separate server and client logic. Never import server-only code in client components.
+  </Accordion>
+  
+  <Accordion title="Route Collocation">
+    Keep route-specific components close to their routes using `_components` folders.
+  </Accordion>
+  
+  <Accordion title="API Route Organization">
+    Mirror app route structure in API routes when possible for consistency.
+  </Accordion>
+  
+  <Accordion title="Middleware Placement">
+    Use middleware for cross-cutting concerns like authentication and redirects.
+  </Accordion>
+  
+  <Accordion title="Static Optimization">
+    Consider static generation for content that doesn't change often. Use ISR for dynamic content.
+  </Accordion>
+  
+  <Accordion title="Bundle Optimization">
+    Avoid importing server-only code in client components. Use dynamic imports for heavy client components.
+  </Accordion>
+</AccordionGroup>
+
+## Integration Patterns
+
+### State Management
+
+- Use React Server Components for server state
+- Implement client state with `useState`/`useReducer` for simple cases
+- Consider Zustand or Jotai for complex client state
+- Use Server Actions for mutations
+
+### Database Integration
+
+- Collocate database queries near their usage
+- Use connection pooling and proper error handling
+- Implement proper TypeScript types from database schema
+
+### Authentication
+
+- Implement auth at the layout level for protected routes
+- Use middleware for route protection
+- Handle both server and client-side auth states
+
+## Communication Style
+
+The agent is direct and authoritative about Next.js architectural decisions:
+
+- States placement decisions with confidence and clear Next.js reasoning
+- Never compromises on the Scope Rule or performance best practices
+- Provides concrete Next.js code examples
+- Challenges inefficient patterns (unnecessary Client Components, poor data fetching)
+- Explains long-term benefits of proper Server/Client Component architecture
+
+<Note>
+  The agent acts as the **guardian of clean, scalable Next.js architecture**, ensuring every decision results in a codebase that leverages Next.js 15+ features optimally, follows the Scope Rule religiously, is immediately understandable through Screaming Architecture principles, and performs exceptionally well for both users and search engines.
+</Note>

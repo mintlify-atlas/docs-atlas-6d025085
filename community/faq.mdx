@@ -1,0 +1,346 @@
+---
+title: 'Frequently Asked Questions'
+description: 'Common questions about the Scope Rule and architectural decisions'
+icon: 'circle-question'
+---
+
+Find answers to common questions about the Scope Rule architectural pattern and how to use the framework agents effectively.
+
+## Understanding the Scope Rule
+
+<AccordionGroup>
+  <Accordion title="What exactly is the Scope Rule?">
+    The Scope Rule is a fundamental architectural principle that determines code placement based on usage scope:
+
+    **"Scope determines structure"**
+
+    - **Code used by 2+ features** → MUST go in global/shared directories
+    - **Code used by 1 feature** → MUST stay local in that feature
+    - **NO EXCEPTIONS** - This rule is absolute and non-negotiable
+
+    This ensures perfect traceability, screaming architecture, scalable organization, and zero architectural debt.
+  </Accordion>
+
+  <Accordion title="Why is the Scope Rule so strict with 'no exceptions'?">
+    The "no exceptions" policy is crucial for maintaining architectural consistency:
+
+    - **Eliminates decision fatigue**: No debates about edge cases or "just this once" scenarios
+    - **Ensures predictability**: Every team member knows exactly where code belongs
+    - **Prevents drift**: No gradual erosion of architectural principles over time
+    - **Enforces discipline**: Strict rules lead to cleaner, more maintainable codebases
+
+    Once you start making exceptions, the architecture breaks down and you end up with the "everything in components/" anti-pattern.
+  </Accordion>
+
+  <Accordion title="What is Screaming Architecture and why does it matter?">
+    Screaming Architecture means your project structure immediately communicates what your application does, not how it's built.
+
+    **Good (Screaming):**
+    ```
+    app/
+      (auth)/        # 👀 Authentication feature!
+      (shop)/        # 👀 E-commerce feature!
+      (dashboard)/   # 👀 Dashboard feature!
+    ```
+
+    **Bad (Silent):**
+    ```
+    app/
+      components/    # 🤷 What does this app do?
+      pages/
+      utils/
+    ```
+
+    Benefits:
+    - New developers understand the domain immediately
+    - Structure reflects business logic, not technology
+    - Features are self-contained and easy to locate
+    - Refactoring is safer and more predictable
+  </Accordion>
+
+  <Accordion title="How does this differ from other architectural patterns?">
+    The Scope Rule differs from traditional patterns in several ways:
+
+    | Pattern | Approach | Problems |
+    |---------|----------|----------|
+    | **Traditional MVC** | Organize by type (controllers/, models/, views/) | Hard to find related code |
+    | **Generic Components Folder** | Put everything in components/ | Becomes a dumping ground |
+    | **Domain-Driven Design** | Complex layering and abstractions | Often over-engineered for frontend |
+    | **Scope Rule** | **Organize by usage scope** | **None - perfect traceability** |
+
+    The Scope Rule is simpler, more practical, and specifically designed for modern frontend applications.
+  </Accordion>
+</AccordionGroup>
+
+## Using the Agents
+
+<AccordionGroup>
+  <Accordion title="Which agent should I use for my project?">
+    Choose based on your framework:
+
+    - **Angular 20+** → Use `scope-rule-architect-angular`
+      - Best for: Enterprise apps, standalone components, signals
+    
+    - **Next.js 15+** → Use `scope-rule-architect-nextjs`
+      - Best for: Full-stack React, SSR/SSG, App Router
+    
+    - **Astro 5+** → Use `scope-rule-architect-astro`
+      - Best for: Content sites, blogs, marketing pages, minimal JS
+    
+    - **React (other)** → Use `scope-rule-architect-React`
+      - Best for: Create React App, Vite, custom setups
+
+    Each agent is specialized for its framework's latest best practices while enforcing the same core Scope Rule.
+  </Accordion>
+
+  <Accordion title="Can I use multiple agents in the same project?">
+    Generally, no. Each agent is designed for a specific framework and enforces framework-specific patterns.
+
+    However, in monorepo scenarios with multiple frameworks, you could use different agents for different packages:
+
+    ```
+    monorepo/
+      apps/
+        web/          # Use scope-rule-architect-nextjs
+        admin/        # Use scope-rule-architect-angular
+      packages/
+        shared/       # Follow Scope Rule principles manually
+    ```
+
+    The Scope Rule principles remain consistent across all agents.
+  </Accordion>
+
+  <Accordion title="Do the agents work with older framework versions?">
+    The agents are optimized for modern framework versions:
+
+    - **Angular agent**: Angular 20+ (standalone components, signals)
+    - **Next.js agent**: Next.js 15+ (App Router, Server Components)
+    - **Astro agent**: Astro 5+ (Content Collections, Islands)
+
+    While the architectural principles apply to older versions, the agents assume modern patterns. For older projects, consider upgrading or adapting the agent's recommendations manually.
+  </Accordion>
+
+  <Accordion title="How do agents integrate with MCP servers?">
+    Agents leverage Model Context Protocol (MCP) servers to access up-to-date framework documentation:
+
+    - **Angular agent** → Uses Angular CLI MCP for current best practices
+    - **Astro agent** → Uses Astro Docs MCP for latest patterns
+    - **Next.js agent** → Built-in Next.js knowledge
+
+    This ensures recommendations stay current with framework evolution without requiring agent updates.
+  </Accordion>
+</AccordionGroup>
+
+## Common Scenarios
+
+<AccordionGroup>
+  <Accordion title="I have a component used in 2 features now, but might be used in more later. Where should it go?">
+    **Answer: In shared/components immediately.**
+
+    The Scope Rule is based on current usage, not future speculation. Since it's used by 2+ features right now, it goes in shared.
+
+    If it was only used by 1 feature but you think it "might" be reused, keep it local until actual reuse happens. Then move it to shared.
+
+    This prevents premature abstraction and keeps the architecture honest.
+  </Accordion>
+
+  <Accordion title="What about utility functions, hooks, or helpers?">
+    The same Scope Rule applies:
+
+    **Used by 1 feature?** → Keep it in that feature's directory
+    ```
+    features/
+      shop/
+        utils/
+          format-price.ts    # Only used in shop
+    ```
+
+    **Used by 2+ features?** → Move to shared
+    ```
+    shared/
+      utils/
+        format-currency.ts   # Used in shop, cart, and checkout
+    ```
+
+    No special treatment for utilities - scope determines structure, always.
+  </Accordion>
+
+  <Accordion title="How do I handle components that are similar but not identical?">
+    Don't force premature abstraction. If components are similar but have different requirements, keep them separate.
+
+    **Bad approach:**
+    ```typescript
+    // Forced abstraction with lots of props
+    <GenericCard variant="product" showPrice showRating />
+    <GenericCard variant="user" showAvatar showBio />
+    ```
+
+    **Good approach:**
+    ```typescript
+    // Separate components with clear purposes
+    <ProductCard />  // In shop feature
+    <UserCard />     // In profile feature
+    ```
+
+    Only abstract when components are truly identical and used by multiple features.
+  </Accordion>
+
+  <Accordion title="What about third-party component libraries (Material UI, Shadcn, etc.)?">
+    Third-party components don't follow your Scope Rule - they're dependencies.
+
+    However, if you create wrappers or customizations:
+
+    **Wrapper used by 1 feature:**
+    ```
+    features/
+      dashboard/
+        components/
+          custom-data-table.tsx   # Wraps Material UI DataGrid
+    ```
+
+    **Wrapper used by 2+ features:**
+    ```
+    shared/
+      components/
+        data-table.tsx            # Reusable across features
+    ```
+  </Accordion>
+
+  <Accordion title="How should I handle API clients and data fetching?">
+    Apply the Scope Rule:
+
+    **Feature-specific API calls:**
+    ```
+    features/
+      products/
+        services/
+          products-api.ts         # Product endpoints only
+    ```
+
+    **Shared base client:**
+    ```
+    core/
+      services/
+        api-client.ts             # Base HTTP client, auth interceptors
+    ```
+
+    The base client goes in `core/` because it's a singleton service used app-wide. Feature-specific endpoints stay local until used by multiple features.
+  </Accordion>
+
+  <Accordion title="What if a component needs to be moved later?">
+    Moving components is expected and encouraged when usage patterns change:
+
+    **Local → Shared** (used by 2+ features now):
+    - Move the component to shared/
+    - Update all imports
+    - This is a normal refactoring
+
+    **Shared → Local** (only 1 feature uses it now):
+    - Move it back to the feature
+    - Update imports
+    - Remove unnecessary abstraction
+
+    The Scope Rule makes these moves safe and predictable because the structure honestly reflects usage.
+  </Accordion>
+</AccordionGroup>
+
+## Edge Cases
+
+<AccordionGroup>
+  <Accordion title="What about components used in layouts or error boundaries?">
+    Layouts and error boundaries are typically used app-wide, so they go in shared or core:
+
+    ```
+    shared/
+      layouts/
+        main-layout.tsx
+        auth-layout.tsx
+      components/
+        error-boundary.tsx
+    ```
+
+    If a layout is specific to one feature (rare), it stays local:
+    ```
+    features/
+      admin/
+        layouts/
+          admin-layout.tsx        # Only used in admin feature
+    ```
+  </Accordion>
+
+  <Accordion title="How do I handle test utilities and mocks?">
+    Test files follow the same Scope Rule:
+
+    **Test utilities for 1 feature:**
+    ```
+    features/
+      products/
+        __tests__/
+          test-utils.ts
+          mocks/
+    ```
+
+    **Test utilities for multiple features:**
+    ```
+    shared/
+      testing/
+        test-utils.ts
+        mock-factory.ts
+    ```
+  </Accordion>
+
+  <Accordion title="What about TypeScript types and interfaces?">
+    Types follow scope:
+
+    **Feature-specific types:**
+    ```
+    features/
+      products/
+        models/
+          product.types.ts
+    ```
+
+    **Shared types:**
+    ```
+    shared/
+      types/
+        api.types.ts
+        common.types.ts
+    ```
+
+    **App-wide types:**
+    ```
+    core/
+      types/
+        environment.types.ts
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Getting Help
+
+<AccordionGroup>
+  <Accordion title="Where can I get help with architectural decisions?">
+    Several resources are available:
+
+    - **Use the agents**: Ask Claude Code with the appropriate agent loaded
+    - **GitHub Discussions**: Open a discussion in the repository
+    - **Issues**: Report bugs or request clarifications
+    - **Community**: Join the [Gentleman Programming](https://doras.to/gentleman-programming) community
+  </Accordion>
+
+  <Accordion title="How can I contribute or suggest improvements?">
+    We welcome contributions! See the [Contributing Guide](/community/contributing) for:
+
+    - Reporting bugs
+    - Creating new framework agents
+    - Improving documentation
+    - Sharing architectural patterns
+
+    Priority frameworks: Vue.js/Nuxt, SvelteKit, Solid.js/SolidStart, Remix
+  </Accordion>
+</AccordionGroup>
+
+<Info>
+Still have questions? Open an issue on [GitHub](https://github.com/alanbuscaglia/claude-agents) or start a discussion.
+</Info>

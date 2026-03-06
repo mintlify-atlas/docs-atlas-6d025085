@@ -1,0 +1,870 @@
+---
+title: Best Practices
+description: Quality checks, patterns, and guidelines for maintaining clean architecture
+icon: circle-check
+---
+
+Maintaining a clean, scalable architecture requires consistent quality checks and adherence to proven patterns. This guide provides real quality checks extracted from the Scope Rule Architects agents.
+
+## Quality Checks Before Finalizing Decisions
+
+Before committing any architectural decision, run through these checks:
+
+### Universal Quality Checks (All Frameworks)
+
+<AccordionGroup>
+  <Accordion title="1. Scope Verification">
+    **Have you correctly counted feature usage?**
+
+    - [ ] Listed all files that import this component
+    - [ ] Counted **distinct features**, not just file count
+    - [ ] Remembered that multiple uses within same feature = 1 feature
+    - [ ] Documented the count with comments
+
+    **Example:**
+    ```typescript
+    /**
+     * ProductCard - Shared Component
+     * 
+     * Usage count: 2 features
+     * - Shop feature: products list, search results
+     * - Wishlist feature: saved items display
+     * 
+     * Decision: 2 features → shared/components/
+     * Verified: 2024-03-15
+     */
+    ```
+  </Accordion>
+
+  <Accordion title="2. Naming Validation">
+    **Do names follow conventions and communicate intent?**
+
+    - [ ] Component names are descriptive and clear
+    - [ ] Container components match feature names (React)
+    - [ ] File names use consistent casing (kebab-case or camelCase)
+    - [ ] No suffixes like `.component`, `.service` unless required by framework
+
+    **Good names:**
+    ```
+    ✅ product-card.tsx (clear, descriptive)
+    ✅ use-products.ts (clear hook name)
+    ✅ auth-actions.ts (clear purpose)
+    ```
+
+    **Bad names:**
+    ```
+    ❌ comp1.tsx (meaningless)
+    ❌ utils.ts (too generic)
+    ❌ stuff.tsx (unclear purpose)
+    ```
+  </Accordion>
+
+  <Accordion title="3. Screaming Test">
+    **Can a new developer understand what the app does from structure alone?**
+
+    Show the directory tree to someone unfamiliar:
+    ```
+    features/
+      auth/          # ✅ Clear: handles authentication
+      shop/          # ✅ Clear: e-commerce functionality
+      profile/       # ✅ Clear: user profile management
+    ```
+
+    vs.
+    ```
+    components/
+      misc/          # ❌ Unclear: what's in here?
+      helpers/       # ❌ Unclear: what do they help with?
+      stuff/         # ❌ Unclear: what stuff?
+    ```
+
+    **Your structure should tell a story about business functionality, not technical implementation.**
+  </Accordion>
+
+  <Accordion title="4. Future-Proofing">
+    **Will this structure scale as features grow?**
+
+    Consider these scenarios:
+    - What happens when you add a new feature?
+    - What if this component needs to be used by a third feature?
+    - Will new developers know where to put new code?
+    - Can features be moved/removed independently?
+
+    **Good: Isolated features**
+    ```
+    features/
+      shop/           # Self-contained, can be removed cleanly
+      blog/           # Independent of shop
+    ```
+
+    **Bad: Tangled dependencies**
+    ```
+    components/
+      product.tsx     # Used by shop, blog, wishlist, search...
+                      # Removing shop feature breaks everything
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Framework-Specific Quality Checks
+
+<Tabs>
+  <Tab title="Angular">
+    ### Angular 20+ Quality Checks
+
+    <AccordionGroup>
+      <Accordion title="Standalone Component Compliance">
+        **All components MUST be standalone**
+
+        - [ ] No NgModules used for feature organization
+        - [ ] Components don't have `standalone: true` (default in Angular 20)
+        - [ ] All dependencies listed in `imports` array
+        - [ ] Using `ChangeDetectionStrategy.OnPush` for all components
+
+        **Good:**
+        ```typescript
+        @Component({
+          selector: 'app-product-card',
+          imports: [CommonModule, DatePipe],
+          changeDetection: ChangeDetectionStrategy.OnPush,
+          template: `...`,
+        })
+        export class ProductCardComponent {}
+        ```
+
+        **Bad:**
+        ```typescript
+        // ❌ Using NgModule
+        @NgModule({
+          declarations: [ProductCardComponent],
+        })
+        export class ProductModule {}
+        ```
+      </Accordion>
+
+      <Accordion title="Signal Usage">
+        **Leverage signals appropriately for state management**
+
+        - [ ] Using `signal()` for mutable state
+        - [ ] Using `computed()` for derived state
+        - [ ] Using `effect()` sparingly for side effects
+        - [ ] Exposing readonly signals publicly
+
+        **Good:**
+        ```typescript
+        export class ShopComponent {
+          // Private mutable signal
+          private readonly _products = signal<Product[]>([]);
+          
+          // Public readonly access
+          readonly products = this._products.asReadonly();
+          
+          // Computed derived state
+          readonly productCount = computed(() => this._products().length);
+          
+          updateProducts(products: Product[]) {
+            this._products.set(products);
+          }
+        }
+        ```
+      </Accordion>
+
+      <Accordion title="Modern Control Flow">
+        **Use native control flow, not structural directives**
+
+        - [ ] Using `@if` instead of `*ngIf`
+        - [ ] Using `@for` instead of `*ngFor`
+        - [ ] Using `@switch` instead of `*ngSwitch`
+        - [ ] Using `track` expressions in `@for`
+
+        **Good:**
+        ```html
+        @if (loading()) {
+          <div>Loading...</div>
+        } @else {
+          @for (product of products(); track product.id) {
+            <app-product-card [product]="product" />
+          }
+        }
+        ```
+
+        **Bad:**
+        ```html
+        <div *ngIf="loading">Loading...</div>
+        <div *ngIf="!loading">
+          <app-product-card 
+            *ngFor="let product of products; trackBy: trackByFn"
+            [product]="product"
+          />
+        </div>
+        ```
+      </Accordion>
+
+      <Accordion title="Dependency Injection">
+        **Use inject() function, not constructor injection**
+
+        - [ ] Using `inject()` in component body
+        - [ ] Avoiding constructor injection
+        - [ ] No use of `any` type
+        - [ ] Services are properly typed
+
+        **Good:**
+        ```typescript
+        export class ProductsComponent {
+          private readonly productService = inject(ProductService);
+          private readonly router = inject(Router);
+        }
+        ```
+
+        **Bad:**
+        ```typescript
+        export class ProductsComponent {
+          constructor(
+            private productService: ProductService,
+            private router: Router
+          ) {}
+        }
+        ```
+      </Accordion>
+    </AccordionGroup>
+  </Tab>
+
+  <Tab title="Next.js">
+    ### Next.js 15+ Quality Checks
+
+    <AccordionGroup>
+      <Accordion title="Server Components by Default">
+        **Minimize client-side JavaScript**
+
+        - [ ] Components are Server Components unless interactivity needed
+        - [ ] `"use client"` only added when absolutely necessary
+        - [ ] Data fetching happens on server when possible
+        - [ ] Props passed to Client Components are serializable
+
+        **Good:**
+        ```typescript
+        // Server Component (default)
+        export default async function ProductsPage() {
+          const products = await getProducts();
+          return <ProductList products={products} />;
+        }
+
+        // Client Component (only when needed)
+        'use client';
+        export function AddToCart({ productId }: Props) {
+          const [isAdding, setIsAdding] = useState(false);
+          // Interactive logic
+        }
+        ```
+
+        **Bad:**
+        ```typescript
+        // ❌ Unnecessary client component
+        'use client';
+        export default function ProductsPage() {
+          return <div>Static content</div>;
+        }
+        ```
+      </Accordion>
+
+      <Accordion title="Server Actions Isolation">
+        **Server Actions MUST use server-only package**
+
+        - [ ] All Server Action files import `"server-only"`
+        - [ ] Server Actions are in `_actions` directories
+        - [ ] Using `revalidatePath` or `revalidateTag` for cache invalidation
+        - [ ] Proper error handling in Server Actions
+
+        **Good:**
+        ```typescript
+        // app/(shop)/_actions/product-actions.ts
+        'use server';
+        import 'server-only';
+        import { revalidatePath } from 'next/cache';
+
+        export async function createProduct(data: ProductData) {
+          try {
+            await db.products.create(data);
+            revalidatePath('/shop');
+            return { success: true };
+          } catch (error) {
+            return { error: 'Failed to create product' };
+          }
+        }
+        ```
+
+        **Bad:**
+        ```typescript
+        // ❌ Missing server-only, no error handling
+        export async function createProduct(data: ProductData) {
+          await db.products.create(data);
+        }
+        ```
+      </Accordion>
+
+      <Accordion title="Route Organization">
+        **Proper use of route groups and private folders**
+
+        - [ ] Using route groups `(group)` for organization without URL impact
+        - [ ] Using private folders `_folder` to exclude from routing
+        - [ ] Co-locating route-specific code with `_components`, `_hooks`
+        - [ ] Shared code only in `src/shared/` for 2+ route groups
+
+        **Good structure:**
+        ```
+        app/
+          (shop)/              # Route group
+            shop/
+              page.tsx         # /shop route
+              _components/     # Private: only for this route
+            _components/       # Private: shared in shop feature
+            _actions/          # Private: shop server actions
+        ```
+
+        **Bad structure:**
+        ```
+        app/
+          shop/
+            components/        # ❌ Not private, affects routing
+            actions/           # ❌ Not private
+        ```
+      </Accordion>
+
+      <Accordion title="Performance Optimization">
+        **Optimize Core Web Vitals and bundle size**
+
+        - [ ] Using `next/image` for all images
+        - [ ] Implementing proper loading states
+        - [ ] Using Suspense boundaries strategically
+        - [ ] Dynamic imports for heavy components
+        - [ ] Metadata configured for SEO
+
+        **Good:**
+        ```typescript
+        import Image from 'next/image';
+        import { Suspense } from 'react';
+
+        export default function ProductPage() {
+          return (
+            <Suspense fallback={<ProductSkeleton />}>
+              <ProductDetails />
+            </Suspense>
+          );
+        }
+        ```
+      </Accordion>
+    </AccordionGroup>
+  </Tab>
+
+  <Tab title="Astro">
+    ### Astro 5+ Quality Checks
+
+    <AccordionGroup>
+      <Accordion title="Static by Default">
+        **Minimize JavaScript, maximize static HTML**
+
+        - [ ] Components are `.astro` unless interactivity needed
+        - [ ] Client directives only on interactive components
+        - [ ] Using appropriate directive: `load`, `idle`, `visible`, `media`
+        - [ ] Zero JavaScript for static content
+
+        **Good:**
+        ```astro
+        ---
+        // Static component - no JS
+        export interface Props {
+          title: string;
+        }
+        const { title } = Astro.props;
+        ---
+        <div>
+          <h1>{title}</h1>
+        </div>
+        ```
+
+        **When interactivity needed:**
+        ```tsx
+        // Newsletter.tsx - needs client-side state
+        export default function Newsletter() {
+          const [email, setEmail] = useState('');
+          return <form>{/* interactive */}</form>;
+        }
+
+        // Use with appropriate directive
+        <Newsletter client:idle />  // ✅ Load when browser idle
+        ```
+
+        **Bad:**
+        ```astro
+        <!-- ❌ Unnecessary island for static content -->
+        <StaticComponent client:load />
+        ```
+      </Accordion>
+
+      <Accordion title="Island Selection">
+        **Choose the right client directive**
+
+        - [ ] `client:load` - Critical interactivity (modals, forms)
+        - [ ] `client:idle` - Non-critical (newsletter, social widgets)
+        - [ ] `client:visible` - Below fold (comments, related items)
+        - [ ] `client:media` - Responsive (mobile menu)
+        - [ ] No directive - Static content
+
+        **Decision framework:**
+        ```astro
+        <!-- Critical: user can't proceed without it -->
+        <CheckoutForm client:load />
+
+        <!-- Important but not critical -->
+        <Newsletter client:idle />
+
+        <!-- Below the fold -->
+        <CommentSection client:visible />
+
+        <!-- Only on mobile -->
+        <MobileMenu client:media="(max-width: 768px)" />
+
+        <!-- Static: no interaction needed -->
+        <ProductCard product={product} />
+        ```
+      </Accordion>
+
+      <Accordion title="Content Collections">
+        **Properly structured and typed content**
+
+        - [ ] Content collections defined in `src/content/config.ts`
+        - [ ] Schemas use Zod for validation
+        - [ ] Frontmatter is type-safe
+        - [ ] Using `getCollection()` to fetch content
+
+        **Good:**
+        ```typescript
+        // src/content/config.ts
+        import { defineCollection, z } from 'astro:content';
+
+        const blog = defineCollection({
+          type: 'content',
+          schema: z.object({
+            title: z.string(),
+            publishDate: z.date(),
+            tags: z.array(z.string()),
+            draft: z.boolean().default(false),
+          }),
+        });
+
+        export const collections = { blog };
+        ```
+
+        ```astro
+        ---
+        import { getCollection } from 'astro:content';
+        const posts = await getCollection('blog', ({ data }) => {
+          return !data.draft; // Filter drafts
+        });
+        ---
+        ```
+      </Accordion>
+
+      <Accordion title="Framework Choice">
+        **Use the right framework for each island**
+
+        - [ ] React for complex state management
+        - [ ] Vue for familiar template syntax
+        - [ ] Svelte for minimal bundle size
+        - [ ] Solid for reactive performance
+        - [ ] Consistency within feature boundaries
+
+        **You can mix frameworks:**
+        ```astro
+        <!-- React for complex form -->
+        <ContactForm client:load />  {/* React */}
+
+        <!-- Svelte for lightweight toggle -->
+        <ThemeToggle client:idle />  {/* Svelte */}
+
+        <!-- Vue for familiar syntax -->
+        <ProductFilter client:visible />  {/* Vue */}
+        ```
+
+        **But maintain consistency within features:**
+        ```
+        pages/shop/
+          components/
+            product-filter.vue       # Vue
+            sort-dropdown.vue        # Vue (same framework)
+        ```
+      </Accordion>
+    </AccordionGroup>
+  </Tab>
+
+  <Tab title="React">
+    ### React 19+ Quality Checks
+
+    <AccordionGroup>
+      <Accordion title="Container/Presentational Pattern">
+        **Proper separation of concerns**
+
+        - [ ] Container handles business logic and state
+        - [ ] Presentational components are pure UI
+        - [ ] Container name matches feature name exactly
+        - [ ] Props are properly typed with interfaces
+
+        **Good:**
+        ```typescript
+        // features/shop/shop.tsx (Container)
+        export function Shop() {
+          const { products, loading } = useProducts();
+          const handleAddToCart = (id: string) => {
+            // Business logic
+          };
+          return (
+            <ShopView 
+              products={products} 
+              loading={loading}
+              onAddToCart={handleAddToCart}
+            />
+          );
+        }
+
+        // features/shop/components/shop-view.tsx (Presentational)
+        interface ShopViewProps {
+          products: Product[];
+          loading: boolean;
+          onAddToCart: (id: string) => void;
+        }
+
+        export function ShopView({ products, loading, onAddToCart }: ShopViewProps) {
+          return (
+            <div>
+              {/* Pure UI, no business logic */}
+            </div>
+          );
+        }
+        ```
+      </Accordion>
+
+      <Accordion title="Custom Hooks">
+        **Extract reusable logic into hooks**
+
+        - [ ] Hooks follow `use*` naming convention
+        - [ ] Complex logic extracted from components
+        - [ ] Hooks are properly typed
+        - [ ] Shared hooks in `shared/hooks/` only if used by 2+ features
+
+        **Good:**
+        ```typescript
+        // features/shop/hooks/use-products.ts
+        export function useProducts() {
+          const [products, setProducts] = useState<Product[]>([]);
+          const [loading, setLoading] = useState(false);
+          const [error, setError] = useState<string | null>(null);
+
+          useEffect(() => {
+            const fetchProducts = async () => {
+              setLoading(true);
+              try {
+                const data = await productService.getAll();
+                setProducts(data);
+              } catch (err) {
+                setError(err.message);
+              } finally {
+                setLoading(false);
+              }
+            };
+            fetchProducts();
+          }, []);
+
+          return { products, loading, error };
+        }
+        ```
+      </Accordion>
+
+      <Accordion title="Type Safety">
+        **Comprehensive TypeScript usage**
+
+        - [ ] All props have interface definitions
+        - [ ] No use of `any` type
+        - [ ] Proper return types on functions
+        - [ ] Models/types defined in separate files
+
+        **Good:**
+        ```typescript
+        // features/shop/models.ts
+        export interface Product {
+          id: string;
+          name: string;
+          price: number;
+          inStock: boolean;
+        }
+
+        // features/shop/components/product-card.tsx
+        interface ProductCardProps {
+          product: Product;
+          onAddToCart: (id: string) => void;
+        }
+
+        export function ProductCard({ product, onAddToCart }: ProductCardProps) {
+          return <div>{/* ... */}</div>;
+        }
+        ```
+
+        **Bad:**
+        ```typescript
+        // ❌ Using any
+        export function ProductCard({ product }: any) {
+          return <div>{product.name}</div>;
+        }
+        ```
+      </Accordion>
+    </AccordionGroup>
+  </Tab>
+</Tabs>
+
+## Common Patterns to Follow
+
+### 1. Co-location Principle
+
+**Keep related code close together**
+
+```
+✅ Good: Co-located
+features/shop/
+  shop.tsx              # Main component
+  components/           # Related components
+  services/             # Related services
+  hooks/                # Related hooks
+  models.ts             # Related types
+
+❌ Bad: Scattered
+components/
+  shop.tsx
+services/
+  shop-service.ts
+hooks/
+  use-shop.ts
+types/
+  shop.ts
+```
+
+### 2. Feature Independence
+
+**Features should be self-contained and removable**
+
+```typescript
+// ✅ Good: Feature imports from shared
+import { Button } from '@shared/components/ui/button';
+import { useLocalStorage } from '@shared/hooks/use-local-storage';
+
+// ❌ Bad: Features importing from each other
+import { ShopUtil } from '@features/shop/utils';
+// Auth feature should not depend on Shop feature
+```
+
+### 3. Progressive Enhancement
+
+**Start local, move to shared when proven necessary**
+
+```typescript
+// Step 1: Create in local feature
+// features/shop/components/product-card.tsx
+
+// Step 2: Second feature needs it?
+// Move to shared/components/product-card.tsx
+
+// Step 3: Update imports
+// - features/shop/products/page.tsx
+// - features/wishlist/page.tsx
+```
+
+## Things to Avoid
+
+<Warning>
+  **Anti-patterns that violate the Scope Rule:**
+</Warning>
+
+### 1. Everything in Components Folder
+
+```
+❌ Anti-pattern:
+components/
+  LoginForm.tsx
+  ProductCard.tsx
+  CartItem.tsx
+  UserProfile.tsx
+  ...(100 more files)
+
+✅ Better:
+features/
+  auth/
+    login/
+      components/
+        login-form.tsx
+  shop/
+    components/
+      product-card.tsx
+```
+
+### 2. Generic Utility Dumping Grounds
+
+```
+❌ Anti-pattern:
+utils/
+  helpers.ts          # What does this help with?
+  utils.ts            # Redundant with folder name
+  misc.ts             # Meaningless
+
+✅ Better:
+features/shop/
+  utils/
+    price-formatter.ts    # Clear purpose
+    inventory-helpers.ts  # Clear purpose
+shared/utils/
+  date-formatter.ts      # Used by 2+ features
+```
+
+### 3. Premature Abstraction
+
+```
+❌ Anti-pattern:
+// Creating shared component before it's used by 2+ features
+shared/
+  components/
+    product-card.tsx  # Only used in shop (for now)
+
+✅ Better:
+// Keep it local until second feature needs it
+features/shop/
+  components/
+    product-card.tsx  # Used only here
+```
+
+### 4. Framework Pattern Violations
+
+```
+❌ Angular:
+// Using NgModules in Angular 20
+@NgModule({ ... })
+
+❌ Next.js:
+// Everything as Client Component
+'use client';
+export default function StaticPage() { ... }
+
+❌ Astro:
+// Using client:load for everything
+<StaticCard client:load />
+
+❌ React:
+// Mixing logic and presentation
+export function Shop() {
+  const [products, setProducts] = useState([]);
+  useEffect(() => { /* fetch */ }, []);
+  return <div>{/* complex UI */}</div>;
+}
+```
+
+## Continuous Quality Maintenance
+
+### Regular Architecture Reviews
+
+**Schedule periodic reviews:**
+
+- **Weekly:** Quick component placement checks during code review
+- **Monthly:** Review if any local components should move to shared
+- **Quarterly:** Full architecture audit and refactoring session
+
+### Automated Checks
+
+**Set up linting rules:**
+
+```javascript
+// .eslintrc.js
+module.exports = {
+  rules: {
+    // Prevent features from importing each other
+    'no-restricted-imports': [
+      'error',
+      {
+        patterns: [
+          {
+            group: ['@features/*/.*'],
+            message: 'Features should not import from other features. Use shared/ instead.',
+          },
+        ],
+      },
+    ],
+  },
+};
+```
+
+### Documentation in Code
+
+**Document architectural decisions:**
+
+```typescript
+/**
+ * ProductCard Component
+ * 
+ * Placement: /shared/components/product-card.tsx
+ * 
+ * Used by:
+ * - Shop feature (product listing, search results)
+ * - Wishlist feature (saved items)
+ * - Recommendations (related products)
+ * 
+ * Scope: 3 features (2+ rule) → Must be in shared/
+ * 
+ * Last reviewed: 2024-03-15
+ * Reviewer: @username
+ */
+export function ProductCard({ product }: Props) {
+  // Implementation
+}
+```
+
+## Quality Checklist Template
+
+Use this template for every new component:
+
+```markdown
+## Component: [ComponentName]
+
+### Placement Decision
+- [ ] Counted usage (X features)
+- [ ] Correct directory: [path]
+- [ ] Reasoning: [1 feature local / 2+ features shared]
+
+### Framework Compliance
+- [ ] Using framework-specific best practices
+- [ ] Proper component type (Server/Client/Island/Standalone)
+- [ ] Performance optimizations applied
+
+### Code Quality
+- [ ] Properly typed (TypeScript)
+- [ ] Follows naming conventions
+- [ ] Has clear, descriptive name
+- [ ] Documented if complex
+
+### Architecture
+- [ ] Passes "Screaming test"
+- [ ] Feature-independent (if shared)
+- [ ] Future-proof structure
+- [ ] No circular dependencies
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Component Placement" icon="map-pin" href="/guides/component-placement">
+    Review the decision framework for placing components
+  </Card>
+  <Card title="Migration Guide" icon="arrows-turn-right" href="/guides/migration">
+    Restructure existing projects to follow these practices
+  </Card>
+  <Card title="Use the Agents" icon="robot" href="/agents">
+    Let the agents enforce these quality checks automatically
+  </Card>
+  <Card title="Examples" icon="code" href="/examples">
+    See these practices applied in real projects
+  </Card>
+</CardGroup>

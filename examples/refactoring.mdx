@@ -1,0 +1,570 @@
+---
+title: Refactoring to Scope Rule
+description: Step-by-step guide to refactoring existing projects to follow the Scope Rule architecture
+---
+
+## Common Starting Points
+
+Most projects start with one of these anti-patterns:
+
+1. **Everything in components/** - All components in a single flat directory
+2. **Technical grouping** - Organized by type (components/, containers/, views/)
+3. **Module-based** - Using framework modules (NgModules, Pages Router)
+4. **Random organization** - No clear pattern at all
+
+## The Refactoring Process
+
+### Step 1: Analyze Current Structure
+
+Document what you have:
+
+```bash
+# Generate a tree of your current structure
+tree src/components > structure-before.txt
+
+# Count components
+find src/components -name "*.tsx" | wc -l
+```
+
+**Example problematic structure:**
+
+```
+src/
+  components/
+    Button.tsx
+    Card.tsx
+    Header.tsx
+    Footer.tsx
+    ProductCard.tsx
+    ProductList.tsx
+    ProductFilter.tsx
+    CartItem.tsx
+    CartSummary.tsx
+    LoginForm.tsx
+    RegisterForm.tsx
+    SocialLogin.tsx
+    Dashboard.tsx
+    DashboardStats.tsx
+    UserTable.tsx
+    UserForm.tsx
+    # ... 50+ more components
+```
+
+### Step 2: Identify Features
+
+Group components by business functionality:
+
+| Component | Feature | Notes |
+|-----------|---------|-------|
+| ProductCard | Shop | Shows product info |
+| ProductList | Shop | Lists products |
+| ProductFilter | Shop | Filters products |
+| CartItem | Cart | Shows cart item |
+| CartSummary | Cart | Cart total |
+| LoginForm | Auth | Login page |
+| RegisterForm | Auth | Register page |
+| SocialLogin | Auth | Used by login & register |
+| Dashboard | Dashboard | Main dashboard |
+| DashboardStats | Dashboard | Dashboard metrics |
+| UserTable | Users | User management |
+| UserForm | Users | Edit users |
+| Button | UI | Used everywhere |
+| Card | UI | Used everywhere |
+| Header | Layout | Used everywhere |
+| Footer | Layout | Used everywhere |
+
+### Step 3: Analyze Component Usage
+
+For each component, count where it's used:
+
+```typescript
+// Create a script to analyze imports
+import fs from 'fs';
+import path from 'path';
+
+function analyzeComponentUsage(componentName: string) {
+  const results = [];
+  
+  // Search all files for imports of this component
+  const files = getAllTsxFiles('src');
+  
+  for (const file of files) {
+    const content = fs.readFileSync(file, 'utf-8');
+    if (content.includes(`from './components/${componentName}'`)) {
+      results.push(file);
+    }
+  }
+  
+  return results;
+}
+
+// Run analysis
+const components = getComponentList('src/components');
+const usage = components.map(comp => ({
+  name: comp,
+  usedIn: analyzeComponentUsage(comp),
+  count: analyzeComponentUsage(comp).length,
+}));
+
+console.table(usage);
+```
+
+**Example output:**
+
+```
+┌──────────────────┬───────┬─────────────────────────────┐
+│ Component        │ Count │ Used In                     │
+├──────────────────┼───────┼─────────────────────────────┤
+│ ProductCard      │   3   │ shop, cart, wishlist        │
+│ ProductList      │   1   │ shop                        │
+│ ProductFilter    │   1   │ shop                        │
+│ CartItem         │   1   │ cart                        │
+│ CartSummary      │   1   │ cart                        │
+│ LoginForm        │   1   │ login                       │
+│ RegisterForm     │   1   │ register                    │
+│ SocialLogin      │   2   │ login, register (same feat) │
+│ Button           │  12   │ everywhere                  │
+│ Card             │   8   │ everywhere                  │
+│ Header           │   1   │ root layout                 │
+│ Footer           │   1   │ root layout                 │
+└──────────────────┴───────┴─────────────────────────────┘
+```
+
+### Step 4: Create Target Structure
+
+Based on analysis, design the new structure:
+
+<Tabs>
+  <Tab title="Next.js">
+    ```
+    src/
+      app/
+        (shop)/
+          shop/
+            page.tsx
+            _components/
+              product-list.tsx       # Move from components/
+              product-filter.tsx     # Move from components/
+          cart/
+            page.tsx
+            _components/
+              cart-item.tsx          # Move from components/
+              cart-summary.tsx       # Move from components/
+          wishlist/
+            page.tsx
+          layout.tsx
+
+        (auth)/
+          login/
+            page.tsx
+            _components/
+              login-form.tsx         # Move from components/
+          register/
+            page.tsx
+            _components/
+              register-form.tsx      # Move from components/
+          _components/
+            social-login.tsx         # Move from components/
+          layout.tsx
+
+        (dashboard)/
+          dashboard/
+            page.tsx
+            _components/
+              dashboard-stats.tsx    # Move from components/
+          users/
+            page.tsx
+            _components/
+              user-table.tsx         # Move from components/
+              user-form.tsx          # Move from components/
+          layout.tsx
+
+      shared/
+        components/
+          ui/
+            button.tsx               # Move from components/
+            card.tsx                 # Move from components/
+          product-card.tsx           # Move from components/
+          header.tsx                 # Move from components/
+          footer.tsx                 # Move from components/
+    ```
+  </Tab>
+
+  <Tab title="Angular">
+    ```
+    src/
+      app/
+        features/
+          shop/
+            products/
+              products.ts
+              components/
+                product-list.ts      # Move from components/
+                product-filter.ts    # Move from components/
+            cart/
+              cart.ts
+              components/
+                cart-item.ts         # Move from components/
+                cart-summary.ts      # Move from components/
+
+          auth/
+            login/
+              login.ts
+              components/
+                login-form.ts        # Move from components/
+            register/
+              register.ts
+              components/
+                register-form.ts     # Move from components/
+            components/
+              social-login.ts        # Move from components/
+
+          dashboard/
+            dashboard.ts
+            components/
+              dashboard-stats.ts     # Move from components/
+
+          users/
+            users.ts
+            components/
+              user-table.ts          # Move from components/
+              user-form.ts           # Move from components/
+
+          shared/
+            components/
+              product-card.ts        # Move from components/
+              button.ts              # Move from components/
+              card.ts                # Move from components/
+    ```
+  </Tab>
+</Tabs>
+
+### Step 5: Execute Migration
+
+Migrate in phases to minimize disruption:
+
+#### Phase 1: Move Shared Components
+
+Start with clearly shared components (used by 2+ features):
+
+```bash
+# Create shared directory
+mkdir -p src/shared/components/ui
+
+# Move UI primitives
+mv src/components/Button.tsx src/shared/components/ui/button.tsx
+mv src/components/Card.tsx src/shared/components/ui/card.tsx
+mv src/components/Input.tsx src/shared/components/ui/input.tsx
+
+# Move cross-feature components
+mv src/components/ProductCard.tsx src/shared/components/product-card.tsx
+mv src/components/Header.tsx src/shared/components/header.tsx
+mv src/components/Footer.tsx src/shared/components/footer.tsx
+```
+
+Update imports:
+
+```typescript
+// Before
+import { Button } from '../../components/Button';
+
+// After
+import { Button } from '@/shared/components/ui/button';
+```
+
+#### Phase 2: Create Feature Directories
+
+```bash
+# Create feature structure
+mkdir -p src/app/\(shop\)/shop/_components
+mkdir -p src/app/\(shop\)/cart/_components
+mkdir -p src/app/\(auth\)/login/_components
+mkdir -p src/app/\(dashboard\)/dashboard/_components
+```
+
+#### Phase 3: Move Feature-Specific Components
+
+Migrate one feature at a time:
+
+```bash
+# Move shop components
+mv src/components/ProductList.tsx src/app/\(shop\)/shop/_components/product-list.tsx
+mv src/components/ProductFilter.tsx src/app/\(shop\)/shop/_components/product-filter.tsx
+
+# Move cart components
+mv src/components/CartItem.tsx src/app/\(shop\)/cart/_components/cart-item.tsx
+mv src/components/CartSummary.tsx src/app/\(shop\)/cart/_components/cart-summary.tsx
+
+# Move auth components
+mv src/components/LoginForm.tsx src/app/\(auth\)/login/_components/login-form.tsx
+mv src/components/RegisterForm.tsx src/app/\(auth\)/register/_components/register-form.tsx
+mv src/components/SocialLogin.tsx src/app/\(auth\)/_components/social-login.tsx
+```
+
+Update imports:
+
+```typescript
+// Before
+import { ProductList } from '../../components/ProductList';
+
+// After
+import { ProductList } from './_components/product-list';
+```
+
+#### Phase 4: Update Path Aliases
+
+Add or update `tsconfig.json`:
+
+```json
+{
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/shared/*": ["./src/shared/*"],
+      "@/lib/*": ["./src/lib/*"]
+    }
+  }
+}
+```
+
+#### Phase 5: Clean Up
+
+```bash
+# Remove old components directory
+rm -rf src/components
+
+# Verify no broken imports
+npm run build
+```
+
+### Step 6: Validate
+
+Run checks to ensure the refactoring is correct:
+
+```bash
+# Build should succeed
+npm run build
+
+# Tests should pass
+npm test
+
+# Linting should pass
+npm run lint
+
+# Type checking should pass
+npm run type-check
+```
+
+## Before & After Comparison
+
+### Before: The "Everything in Components" Anti-pattern
+
+```
+src/
+  components/
+    Button.tsx              # Used everywhere
+    Card.tsx                # Used everywhere
+    Header.tsx              # Used in layout
+    Footer.tsx              # Used in layout
+    ProductCard.tsx         # Used in 3 places
+    ProductList.tsx         # Used in shop only
+    ProductFilter.tsx       # Used in shop only
+    CartItem.tsx            # Used in cart only
+    CartSummary.tsx         # Used in cart only
+    WishlistItem.tsx        # Used in wishlist only
+    LoginForm.tsx           # Used in login only
+    RegisterForm.tsx        # Used in register only
+    SocialLogin.tsx         # Used in login & register
+    Dashboard.tsx           # Used in dashboard only
+    DashboardStats.tsx      # Used in dashboard only
+    UserTable.tsx           # Used in users only
+    UserForm.tsx            # Used in users only
+    # ... everything mixed together
+```
+
+**Problems:**
+- No clear feature boundaries
+- Can't tell what the app does
+- Hard to find related code
+- Merge conflicts common
+- Can't delete features easily
+
+### After: Scope Rule Architecture
+
+```
+src/
+  app/
+    (shop)/
+      shop/
+        _components/
+          product-list.tsx      # Local: shop only
+          product-filter.tsx    # Local: shop only
+      cart/
+        _components/
+          cart-item.tsx         # Local: cart only
+          cart-summary.tsx      # Local: cart only
+      wishlist/
+        _components/
+          wishlist-item.tsx     # Local: wishlist only
+
+    (auth)/
+      login/
+        _components/
+          login-form.tsx        # Local: login only
+      register/
+        _components/
+          register-form.tsx     # Local: register only
+      _components/
+        social-login.tsx        # Shared: login & register
+
+    (dashboard)/
+      dashboard/
+        _components/
+          dashboard-stats.tsx   # Local: dashboard only
+      users/
+        _components/
+          user-table.tsx        # Local: users only
+          user-form.tsx         # Local: users only
+
+  shared/
+    components/
+      ui/
+        button.tsx              # Shared: used everywhere
+        card.tsx                # Shared: used everywhere
+      product-card.tsx          # Shared: shop, cart, wishlist
+      header.tsx                # Shared: all layouts
+      footer.tsx                # Shared: all layouts
+```
+
+**Benefits:**
+- Clear feature boundaries
+- Structure "screams" functionality
+- Related code co-located
+- Easy to find and modify
+- Can delete features by removing directory
+- Shared code clearly marked
+
+## Migration Checklist
+
+<Card title="Refactoring Checklist" icon="list-check">
+  - [ ] Analyze current structure and document it
+  - [ ] Identify business features
+  - [ ] Count component usage across features
+  - [ ] Design target structure
+  - [ ] Create new directory structure
+  - [ ] Move shared components first
+  - [ ] Update shared component imports
+  - [ ] Move feature components one feature at a time
+  - [ ] Update feature component imports
+  - [ ] Configure path aliases
+  - [ ] Run build to check for errors
+  - [ ] Run tests
+  - [ ] Remove old directories
+  - [ ] Update documentation
+  - [ ] Commit changes
+</Card>
+
+## Common Pitfalls
+
+### Pitfall 1: Moving Too Fast
+
+**Wrong:** Move everything at once, break the build, spend days fixing imports.
+
+**Right:** Migrate one feature at a time, validate each step.
+
+### Pitfall 2: Over-Sharing
+
+**Wrong:** Move components to shared "just in case" they'll be reused.
+
+**Right:** Keep local until 2nd feature actually needs it, then extract.
+
+### Pitfall 3: Ignoring Tests
+
+**Wrong:** Update component paths but forget to update test imports.
+
+**Right:** Update tests alongside components to keep them passing.
+
+### Pitfall 4: Breaking Running Development
+
+**Wrong:** Refactor on main branch, break everyone's development.
+
+**Right:** Create a feature branch, migrate in phases, merge when complete.
+
+## Automated Migration Tools
+
+Create scripts to automate repetitive tasks:
+
+```typescript
+// scripts/migrate-component.ts
+import fs from 'fs';
+import path from 'path';
+
+interface MigrationConfig {
+  component: string;
+  from: string;
+  to: string;
+}
+
+function migrateComponent({ component, from, to }: MigrationConfig) {
+  // Move file
+  const oldPath = path.join(from, `${component}.tsx`);
+  const newPath = path.join(to, `${component}.tsx`);
+  
+  fs.mkdirSync(path.dirname(newPath), { recursive: true });
+  fs.renameSync(oldPath, newPath);
+  
+  // Update imports throughout codebase
+  updateImports(component, from, to);
+  
+  console.log(`✅ Migrated ${component}`);
+}
+
+function updateImports(component: string, from: string, to: string) {
+  // Find all files that import this component
+  // Update their import statements
+  // (Implementation details...)
+}
+
+// Usage
+migrateComponent({
+  component: 'ProductList',
+  from: 'src/components',
+  to: 'src/app/(shop)/shop/_components',
+});
+```
+
+## Post-Migration
+
+After completing the migration:
+
+1. **Document the new structure** - Update README with architecture decisions
+2. **Train the team** - Explain the Scope Rule to all developers
+3. **Set up linting rules** - Enforce the structure with ESLint rules
+4. **Monitor for violations** - Watch for components in wrong places during code review
+
+## Example ESLint Rule
+
+Prevent importing from wrong locations:
+
+```javascript
+// .eslintrc.js
+module.exports = {
+  rules: {
+    'no-restricted-imports': [
+      'error',
+      {
+        patterns: [
+          {
+            group: ['../**/shared/*'],
+            message: 'Import from @/shared/* instead',
+          },
+          {
+            group: ['../../../features/*'],
+            message: 'Do not import from other features',
+          },
+        ],
+      },
+    ],
+  },
+};
+```

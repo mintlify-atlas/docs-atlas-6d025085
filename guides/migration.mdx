@@ -1,0 +1,893 @@
+---
+title: Migration Guide
+description: Restructure existing projects to follow the Scope Rule architecture
+icon: arrows-turn-right
+---
+
+Already have an existing project? This guide walks you through migrating to the Scope Rule architecture with real strategies and before/after examples.
+
+## Migration Strategy
+
+Migration should be **incremental and safe**. You don't need to restructure everything at once.
+
+### Phase 1: Audit Current Structure
+
+<Steps>
+  <Step title="Identify All Components">
+    Create an inventory of every component, service, hook, and utility:
+
+    ```bash
+    # Find all components
+    find src -name "*.tsx" -o -name "*.ts" -o -name "*.astro" | sort
+
+    # Or use a more sophisticated approach
+    tree src/components
+    tree src/features
+    ```
+
+    Create a spreadsheet or document listing:
+    - Component name
+    - Current location
+    - Files that import it
+    - Number of features that use it
+  </Step>
+
+  <Step title="Map Feature Boundaries">
+    Identify distinct business features in your application:
+
+    **Example mapping:**
+    ```
+    Current structure:          Feature identification:
+    /components                 
+      /auth                     → Auth feature
+      /products                 → Shop feature (products)
+      /cart                     → Shop feature (cart)
+      /profile                  → Profile feature
+      /ui                       → Shared components?
+    ```
+
+    Group related functionality:
+    - Authentication (login, register, password reset)
+    - Shop (products, cart, checkout, wishlist)
+    - Profile (settings, preferences, history)
+    - Dashboard (analytics, reports)
+  </Step>
+
+  <Step title="Count Component Usage">
+    For each component, count how many **distinct features** use it:
+
+    ```bash
+    # Find all imports of a component
+    grep -r "import.*ProductCard" src/
+    
+    # Results analysis:
+    # src/features/shop/products/page.tsx      → shop feature
+    # src/features/shop/cart/page.tsx          → shop feature (same feature)
+    # src/features/wishlist/page.tsx           → wishlist feature
+    # Count: 2 distinct features → Goes in shared/
+    ```
+
+    <Warning>
+      Multiple uses within the **same feature** count as 1, not multiple!
+    </Warning>
+  </Step>
+
+  <Step title="Create Migration Plan">
+    Categorize components into three groups:
+
+    **1. Definitely Local (1 feature)**
+    ```
+    LoginForm          → Only in auth/login
+    ProductFilter      → Only in shop/products
+    CartSummary        → Only in shop/cart
+    ```
+
+    **2. Definitely Shared (2+ features)**
+    ```
+    Button             → Used everywhere
+    Modal              → Used in auth, shop, profile
+    ProductCard        → Used in shop, wishlist, recommendations
+    ```
+
+    **3. Uncertain (needs investigation)**
+    ```
+    UserAvatar         → Might be used in multiple features
+    ErrorBoundary      → Check actual usage
+    ```
+  </Step>
+</Steps>
+
+### Phase 2: Create New Structure
+
+<Steps>
+  <Step title="Create Feature Directories">
+    Set up your new structure without moving files yet:
+
+    <Tabs>
+      <Tab title="Angular">
+        ```bash
+        # Create feature structure
+        mkdir -p src/app/features/{auth,shop,profile}
+        mkdir -p src/app/features/shared/{components,services,signals}
+        
+        # Feature-specific subdirectories
+        mkdir -p src/app/features/auth/{login,register,components,services}
+        mkdir -p src/app/features/shop/{products,cart,components,services}
+        ```
+      </Tab>
+
+      <Tab title="Next.js">
+        ```bash
+        # Create route groups
+        mkdir -p src/app/{\(auth\),\(shop\),\(dashboard\)}
+        
+        # Private folders for co-location
+        mkdir -p src/app/\(auth\)/{login,register,_components,_hooks,_actions}
+        mkdir -p src/app/\(shop\)/{shop,cart,_components,_actions}
+        
+        # Shared directory
+        mkdir -p src/shared/{components,hooks,actions}
+        ```
+      </Tab>
+
+      <Tab title="Astro">
+        ```bash
+        # Create page structure
+        mkdir -p src/pages/{blog,shop,about}
+        
+        # Page-specific components
+        mkdir -p src/pages/blog/components
+        mkdir -p src/pages/shop/{components,utils}
+        
+        # Shared components
+        mkdir -p src/components/{ui,layout,islands}
+        ```
+      </Tab>
+
+      <Tab title="React">
+        ```bash
+        # Create feature structure
+        mkdir -p src/features/{auth,shop,profile}
+        
+        # Feature-specific subdirectories
+        mkdir -p src/features/auth/{components,services,hooks}
+        mkdir -p src/features/shop/{components,services,hooks}
+        
+        # Shared directory
+        mkdir -p src/shared/{components,hooks,utils}
+        ```
+      </Tab>
+    </Tabs>
+  </Step>
+
+  <Step title="Move Definitely Local Components First">
+    Start with components that are **definitely used by only 1 feature**:
+
+    ```bash
+    # Example: Moving LoginForm (only used in auth/login)
+    git mv src/components/auth/LoginForm.tsx \
+            src/app/features/auth/login/components/login-form.tsx
+    ```
+
+    Update imports in the files that use it:
+    ```typescript
+    // Before
+    import { LoginForm } from '../../../components/auth/LoginForm';
+
+    // After (with path alias)
+    import { LoginForm } from '@features/auth/login/components/login-form';
+    ```
+  </Step>
+
+  <Step title="Move Definitely Shared Components">
+    Move components used by 2+ features to shared:
+
+    ```bash
+    # Example: Moving Button (used everywhere)
+    git mv src/components/ui/Button.tsx \
+            src/shared/components/ui/button.tsx
+    ```
+
+    Update all imports:
+    ```typescript
+    // Before
+    import { Button } from '../../components/ui/Button';
+
+    // After
+    import { Button } from '@shared/components/ui/button';
+    ```
+  </Step>
+
+  <Step title="Investigate Uncertain Components">
+    For components where usage is unclear:
+
+    1. Run search to find all imports
+    2. Count distinct features
+    3. Move based on the Scope Rule
+    4. Add a comment documenting the decision
+
+    ```typescript
+    /**
+     * UserAvatar - Shared Component
+     * 
+     * Used by:
+     * - Profile feature (profile display)
+     * - Auth feature (account settings)
+     * - Dashboard feature (user info widget)
+     * 
+     * Decision: 3 features → Must be in shared/
+     * Date: 2024-03-15
+     */
+    export function UserAvatar({ user }: Props) {
+      // Implementation
+    }
+    ```
+  </Step>
+</Steps>
+
+### Phase 3: Modernize Framework Patterns
+
+While migrating structure, also update to modern framework patterns.
+
+<Tabs>
+  <Tab title="Angular">
+    ### Migrate to Angular 20 Patterns
+
+    <Steps>
+      <Step title="Convert to Standalone Components">
+        **Before (NgModule):**
+        ```typescript
+        // login.module.ts
+        import { NgModule } from '@angular/core';
+        import { LoginComponent } from './login.component';
+
+        @NgModule({
+          declarations: [LoginComponent],
+          imports: [CommonModule, ReactiveFormsModule],
+        })
+        export class LoginModule {}
+        ```
+
+        **After (Standalone):**
+        ```typescript
+        // login.ts
+        import { Component, ChangeDetectionStrategy } from '@angular/core';
+        import { ReactiveFormsModule } from '@angular/forms';
+
+        @Component({
+          selector: 'app-login',
+          imports: [ReactiveFormsModule],
+          changeDetection: ChangeDetectionStrategy.OnPush,
+          templateUrl: './login.html',
+        })
+        export class LoginComponent {
+          // Component logic
+        }
+        ```
+      </Step>
+
+      <Step title="Replace Lifecycle Hooks with Signals">
+        **Before (ngOnInit):**
+        ```typescript
+        export class ProductsComponent implements OnInit {
+          products: Product[] = [];
+          loading = false;
+
+          ngOnInit() {
+            this.loading = true;
+            this.productService.getProducts().subscribe(products => {
+              this.products = products;
+              this.loading = false;
+            });
+          }
+        }
+        ```
+
+        **After (Signals):**
+        ```typescript
+        export class ProductsComponent {
+          private readonly productService = inject(ProductService);
+          
+          readonly loading = signal(false);
+          readonly products = signal<Product[]>([]);
+          
+          constructor() {
+            this.loadProducts();
+          }
+
+          private async loadProducts() {
+            this.loading.set(true);
+            const data = await this.productService.getProducts();
+            this.products.set(data);
+            this.loading.set(false);
+          }
+        }
+        ```
+      </Step>
+
+      <Step title="Update to Modern Control Flow">
+        **Before (*ngIf, *ngFor):**
+        ```html
+        <div *ngIf="loading">Loading...</div>
+        <div *ngIf="!loading">
+          <div *ngFor="let product of products">
+            {{ product.name }}
+          </div>
+        </div>
+        ```
+
+        **After (@if, @for):**
+        ```html
+        @if (loading()) {
+          <div>Loading...</div>
+        } @else {
+          @for (product of products(); track product.id) {
+            <div>{{ product.name }}</div>
+          }
+        }
+        ```
+      </Step>
+    </Steps>
+  </Tab>
+
+  <Tab title="Next.js">
+    ### Migrate to Next.js 15 App Router
+
+    <Steps>
+      <Step title="Convert Pages to App Router">
+        **Before (Pages Router):**
+        ```typescript
+        // pages/shop/products.tsx
+        import { GetServerSideProps } from 'next';
+
+        export default function ProductsPage({ products }) {
+          return <div>{/* UI */}</div>;
+        }
+
+        export const getServerSideProps: GetServerSideProps = async () => {
+          const products = await fetchProducts();
+          return { props: { products } };
+        };
+        ```
+
+        **After (App Router):**
+        ```typescript
+        // app/(shop)/shop/page.tsx
+        export default async function ShopPage() {
+          const products = await fetchProducts();
+          
+          return <div>{/* UI */}</div>;
+        }
+        ```
+      </Step>
+
+      <Step title="Extract Server Actions">
+        **Before (API routes + client fetch):**
+        ```typescript
+        // pages/api/cart.ts
+        export default async function handler(req, res) {
+          if (req.method === 'POST') {
+            await addToCart(req.body);
+            res.status(200).json({ success: true });
+          }
+        }
+
+        // Component
+        const handleAddToCart = async () => {
+          await fetch('/api/cart', { method: 'POST', ... });
+        };
+        ```
+
+        **After (Server Actions):**
+        ```typescript
+        // app/(shop)/_actions/cart-actions.ts
+        'use server';
+        import 'server-only';
+
+        export async function addToCart(productId: string) {
+          // Server-side logic
+          revalidatePath('/cart');
+        }
+
+        // Component
+        import { addToCart } from '../_actions/cart-actions';
+        
+        const handleAddToCart = async () => {
+          await addToCart(productId);
+        };
+        ```
+      </Step>
+
+      <Step title="Separate Server and Client Components">
+        **Before (Everything client-side):**
+        ```typescript
+        'use client';
+        import { useState } from 'react';
+
+        export default function ProductPage() {
+          const [products, setProducts] = useState([]);
+          
+          useEffect(() => {
+            fetch('/api/products').then(...);
+          }, []);
+
+          return <div>{/* UI */}</div>;
+        }
+        ```
+
+        **After (Server Component with Client Island):**
+        ```typescript
+        // page.tsx (Server Component)
+        import { AddToCart } from './_components/add-to-cart';
+
+        export default async function ProductPage() {
+          const products = await fetchProducts(); // Server-side
+
+          return (
+            <div>
+              {products.map(product => (
+                <div key={product.id}>
+                  <h2>{product.name}</h2>
+                  <AddToCart productId={product.id} /> {/* Client island */}
+                </div>
+              ))}
+            </div>
+          );
+        }
+
+        // _components/add-to-cart.tsx (Client Component)
+        'use client';
+        export function AddToCart({ productId }: Props) {
+          // Interactive logic
+        }
+        ```
+      </Step>
+    </Steps>
+  </Tab>
+
+  <Tab title="Astro">
+    ### Migrate to Astro 5 Islands
+
+    <Steps>
+      <Step title="Convert Static Components">
+        **Before (React component for everything):**
+        ```tsx
+        // components/BlogCard.tsx
+        export function BlogCard({ title, excerpt }: Props) {
+          return (
+            <article>
+              <h2>{title}</h2>
+              <p>{excerpt}</p>
+            </article>
+          );
+        }
+        ```
+
+        **After (Astro component - static):**
+        ```astro
+        ---
+        // pages/blog/components/blog-card.astro
+        export interface Props {
+          title: string;
+          excerpt: string;
+        }
+        const { title, excerpt } = Astro.props;
+        ---
+        <article>
+          <h2>{title}</h2>
+          <p>{excerpt}</p>
+        </article>
+        ```
+
+        **Result:** Zero JavaScript shipped for this component.
+      </Step>
+
+      <Step title="Extract Interactive Islands">
+        **Before (Everything hydrated):**
+        ```tsx
+        // components/ContactForm.tsx
+        export function ContactForm() {
+          const [formData, setFormData] = useState({});
+          // Form logic
+          return <form>{/* fields */}</form>;
+        }
+
+        // Used in page
+        import ContactForm from '../components/ContactForm';
+        <ContactForm />
+        ```
+
+        **After (Island with client directive):**
+        ```tsx
+        // components/islands/ContactForm.tsx
+        export default function ContactForm() {
+          const [formData, setFormData] = useState({});
+          // Form logic
+          return <form>{/* fields */}</form>;
+        }
+
+        // Used in page with client directive
+        import ContactForm from '@/components/islands/ContactForm';
+        <ContactForm client:load />
+        ```
+
+        **Choose the right directive:**
+        - `client:load` - Load immediately
+        - `client:idle` - Load when browser is idle
+        - `client:visible` - Load when component is visible
+      </Step>
+
+      <Step title="Set Up Content Collections">
+        **Before (Manual file reading):**
+        ```typescript
+        const posts = import.meta.glob('../content/blog/*.md');
+        // Manual processing
+        ```
+
+        **After (Type-safe Content Collections):**
+        ```typescript
+        // src/content/config.ts
+        import { defineCollection, z } from 'astro:content';
+
+        const blog = defineCollection({
+          type: 'content',
+          schema: z.object({
+            title: z.string(),
+            publishDate: z.date(),
+            tags: z.array(z.string()),
+          }),
+        });
+
+        export const collections = { blog };
+
+        // Use in pages
+        import { getCollection } from 'astro:content';
+        const posts = await getCollection('blog');
+        ```
+      </Step>
+    </Steps>
+  </Tab>
+
+  <Tab title="React">
+    ### Modernize React Patterns
+
+    <Steps>
+      <Step title="Implement Container/Presentational Pattern">
+        **Before (Mixed concerns):**
+        ```typescript
+        // components/Shop.tsx
+        export function Shop() {
+          const [products, setProducts] = useState([]);
+          const [loading, setLoading] = useState(false);
+
+          useEffect(() => {
+            setLoading(true);
+            fetchProducts().then(data => {
+              setProducts(data);
+              setLoading(false);
+            });
+          }, []);
+
+          return (
+            <div>
+              {loading ? (
+                <div>Loading...</div>
+              ) : (
+                products.map(product => (
+                  <div key={product.id}>{product.name}</div>
+                ))
+              )}
+            </div>
+          );
+        }
+        ```
+
+        **After (Separated concerns):**
+        ```typescript
+        // features/shop/shop.tsx (Container)
+        export function Shop() {
+          const { products, loading } = useProducts();
+          return <ShopView products={products} loading={loading} />;
+        }
+
+        // features/shop/components/shop-view.tsx (Presentational)
+        export function ShopView({ products, loading }: Props) {
+          if (loading) return <div>Loading...</div>;
+          
+          return (
+            <div className="shop">
+              {products.map(product => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          );
+        }
+
+        // features/shop/hooks/use-products.ts (Custom hook)
+        export function useProducts() {
+          const [products, setProducts] = useState<Product[]>([]);
+          const [loading, setLoading] = useState(false);
+
+          useEffect(() => {
+            setLoading(true);
+            fetchProducts().then(data => {
+              setProducts(data);
+              setLoading(false);
+            });
+          }, []);
+
+          return { products, loading };
+        }
+        ```
+      </Step>
+
+      <Step title="Extract Custom Hooks">
+        **Before (Repeated logic):**
+        ```typescript
+        function ComponentA() {
+          const [value, setValue] = useState(
+            localStorage.getItem('key') || ''
+          );
+          
+          useEffect(() => {
+            localStorage.setItem('key', value);
+          }, [value]);
+        }
+        
+        function ComponentB() {
+          // Same logic repeated
+        }
+        ```
+
+        **After (Reusable hook):**
+        ```typescript
+        // shared/hooks/use-local-storage.ts
+        export function useLocalStorage(key: string, initialValue: string) {
+          const [value, setValue] = useState(
+            () => localStorage.getItem(key) || initialValue
+          );
+
+          useEffect(() => {
+            localStorage.setItem(key, value);
+          }, [key, value]);
+
+          return [value, setValue] as const;
+        }
+
+        // Usage
+        function ComponentA() {
+          const [value, setValue] = useLocalStorage('key', '');
+        }
+        ```
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+## Complete Migration Example
+
+Let's walk through a full migration of an e-commerce app:
+
+### Before: Everything in One Place
+
+```
+src/
+  components/
+    auth/
+      LoginForm.tsx
+      RegisterForm.tsx
+      SocialLogin.tsx
+    shop/
+      ProductCard.tsx
+      ProductList.tsx
+      ProductFilter.tsx
+      AddToCart.tsx
+    cart/
+      CartItem.tsx
+      CartSummary.tsx
+    ui/
+      Button.tsx
+      Modal.tsx
+      Input.tsx
+  pages/
+    login.tsx
+    register.tsx
+    shop.tsx
+    cart.tsx
+```
+
+### After: Scope Rule Applied (Next.js Example)
+
+```
+src/
+  app/
+    (auth)/
+      login/
+        page.tsx
+        _components/
+          login-form.tsx          # Only used in login
+      register/
+        page.tsx
+        _components/
+          register-form.tsx       # Only used in register
+      _components/
+        social-login.tsx          # Used by login + register (same feature)
+      _actions/
+        auth-actions.ts
+    (shop)/
+      shop/
+        page.tsx
+        _components/
+          product-list.tsx        # Only used in shop page
+          product-filter.tsx      # Only used in shop page
+      cart/
+        page.tsx
+        _components/
+          cart-item.tsx           # Only used in cart
+          cart-summary.tsx        # Only used in cart
+      _components/
+        add-to-cart.tsx           # Used by shop + cart (same feature)
+      _actions/
+        product-actions.ts
+        cart-actions.ts
+  shared/                         # 2+ features only
+    components/
+      ui/
+        button.tsx                # Used everywhere
+        modal.tsx                 # Used in auth + shop
+        input.tsx                 # Used everywhere
+      product-card.tsx            # Used in shop + wishlist (if added)
+```
+
+### What Changed and Why
+
+<AccordionGroup>
+  <Accordion title="LoginForm & RegisterForm (Moved to local)">
+    **Before:** `components/auth/LoginForm.tsx`
+    
+    **After:** `app/(auth)/login/_components/login-form.tsx`
+
+    **Why:** Each form is only used in its specific route. Following co-location principle.
+  </Accordion>
+
+  <Accordion title="SocialLogin (Stays within feature)">
+    **Before:** `components/auth/SocialLogin.tsx`
+    
+    **After:** `app/(auth)/_components/social-login.tsx`
+
+    **Why:** Used by both login and register, but both are part of the same auth feature. Shared within the feature, not globally.
+  </Accordion>
+
+  <Accordion title="ProductCard (Could go shared)">
+    **Initial:** `app/(shop)/_components/product-card.tsx`
+    
+    **If used by wishlist feature later:** Move to `shared/components/product-card.tsx`
+
+    **Why:** Currently only used in shop. If wishlist feature is added and uses it, then it becomes shared (2+ features).
+  </Accordion>
+
+  <Accordion title="UI Components (Moved to shared)">
+    **Before:** `components/ui/Button.tsx`
+    
+    **After:** `shared/components/ui/button.tsx`
+
+    **Why:** Button, Modal, Input are used across auth, shop, and potentially other features. Clear 2+ usage.
+  </Accordion>
+</AccordionGroup>
+
+## Migration Checklist
+
+Use this checklist to track your migration progress:
+
+- [ ] **Audit complete**: All components inventoried with usage counts
+- [ ] **Feature boundaries defined**: Clear business features identified
+- [ ] **New structure created**: Directory structure set up
+- [ ] **Path aliases configured**: TypeScript/build tool configured
+- [ ] **Local components moved**: 1-feature components in place
+- [ ] **Shared components moved**: 2+ feature components in shared/
+- [ ] **Imports updated**: All import statements corrected
+- [ ] **Framework patterns modernized**: Using latest framework features
+- [ ] **Tests passing**: All tests updated and passing
+- [ ] **Documentation updated**: Team knows new structure
+- [ ] **Old directories removed**: Cleaned up old structure
+
+## Handling Team Migration
+
+<Warning>
+  **Don't surprise your team with a massive restructure!**
+</Warning>
+
+### Communication Strategy
+
+1. **Share the plan**: Show the team the new structure before starting
+2. **Migrate incrementally**: One feature at a time, not everything at once
+3. **Update documentation**: Create a guide for the team
+4. **Pair on first migrations**: Work together on initial moves
+5. **Set up linting**: Add ESLint rules to enforce new structure
+
+### Example Team Guide
+
+```markdown
+# Component Placement Guide
+
+We're migrating to the Scope Rule architecture.
+
+## Quick Decision Tree
+
+1. Is this component used by only 1 feature?
+   → Place in that feature's directory
+
+2. Is this component used by 2+ features?
+   → Place in `shared/components/`
+
+## Examples
+
+- LoginForm → Only in auth → `app/(auth)/login/_components/`
+- Button → Used everywhere → `shared/components/ui/`
+- ProductCard → Only in shop (for now) → `app/(shop)/_components/`
+
+## Questions?
+
+Ask in #architecture channel
+```
+
+## Troubleshooting Common Issues
+
+<AccordionGroup>
+  <Accordion title="Circular dependencies after restructuring">
+    **Problem:** Components importing each other in circles.
+
+    **Solution:**
+    1. Identify the circular dependency
+    2. Extract shared types to a separate file
+    3. Use dependency injection or composition
+    4. Consider if one component should be split
+  </Accordion>
+
+  <Accordion title="Path alias imports not working">
+    **Problem:** TypeScript can't resolve `@features/*` imports.
+
+    **Solution:**
+    1. Verify `tsconfig.json` paths configuration
+    2. Restart TypeScript server
+    3. Check build tool config (Vite, Next.js, etc.)
+    4. Ensure paths don't conflict with node_modules
+  </Accordion>
+
+  <Accordion title="Tests breaking after migration">
+    **Problem:** Tests can't find moved components.
+
+    **Solution:**
+    1. Update test imports to use new paths
+    2. Update mock paths in test setup
+    3. Verify test path aliases match app config
+    4. Run tests after each move to catch issues early
+  </Accordion>
+
+  <Accordion title="Uncertainty about component usage">
+    **Problem:** Not sure how many features use a component.
+
+    **Solution:**
+    1. Use IDE "Find All References"
+    2. Use grep/ripgrep to search imports
+    3. Add temporary console.log to see actual usage
+    4. When uncertain, start local and move to shared if needed
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Best Practices" icon="circle-check" href="/guides/best-practices">
+    Learn quality checks and patterns for maintaining clean architecture
+  </Card>
+  <Card title="Component Placement" icon="map-pin" href="/guides/component-placement">
+    Review the decision framework for placing new components
+  </Card>
+  <Card title="Use the Agents" icon="robot" href="/agents">
+    Let the agents guide your architectural decisions
+  </Card>
+  <Card title="Examples" icon="code" href="/examples">
+    See real-world examples of the Scope Rule in action
+  </Card>
+</CardGroup>

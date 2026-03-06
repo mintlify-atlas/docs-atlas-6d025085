@@ -1,80 +1,409 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart
+description: Learn how to use Scope Rule Architects to make architectural decisions and structure your frontend projects
 ---
 
-## Get started in three steps
+## Understanding the Scope Rule
 
-Get your documentation site running locally and make your first customization.
+The Scope Rule is the fundamental principle that all agents enforce:
 
-### Step 1: Set up your local environment
+<Card title="The Scope Rule" icon="ruler">
+  **"Scope determines structure"**
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
-
-<CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
+  - Code used by **2+ features** → MUST go in global/shared directories
+  - Code used by **1 feature** → MUST stay local in that feature
+  - **NO EXCEPTIONS** - This rule is absolute and non-negotiable
 </Card>
 
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
+This approach ensures:
+
+- **Perfect traceability** - Know exactly where to find code
+- **Screaming architecture** - Structure immediately communicates functionality
+- **Scalable organization** - Grows naturally with your application
+- **Zero architectural debt** - Prevents the "everything in components/" anti-pattern
+
+## First Steps
+
+Once you have the agents installed, simply ask Claude Code architectural questions in your project. The appropriate agent will be invoked automatically based on your framework and question context.
+
+## Framework-Specific Examples
+
+<Tabs>
+  <Tab title="Angular">
+    ### Angular Example
+
+    The **scope-rule-architect-angular** agent specializes in Angular 20+ projects with standalone components, signals, and modern patterns.
+
+    #### Ask the Agent
+
+    ```
+    I have a Button component that will be used in both the shopping cart
+    and user profile features. Where should I put it?
+    ```
+
+    #### Agent Response
+
+    The agent will determine that since the Button component is used by **2+ features** (shopping cart and user profile), it must go in the **shared/components** directory:
+
+    ```typescript
+    // src/app/features/shared/components/button.ts
+    import {
+      Component,
+      ChangeDetectionStrategy,
+      input,
+      output,
+    } from '@angular/core';
+
+    @Component({
+      selector: 'app-button',
+      changeDetection: ChangeDetectionStrategy.OnPush,
+      template: `
+        <button
+          [type]="type()"
+          [disabled]="disabled()"
+          (click)="handleClick()">
+          <ng-content></ng-content>
+        </button>
+      `,
+    })
+    export class ButtonComponent {
+      readonly type = input<'button' | 'submit'>('button');
+      readonly disabled = input(false);
+      readonly clicked = output<void>();
+
+      handleClick(): void {
+        this.clicked.emit();
+      }
+    }
+    ```
+
+    #### Project Structure
+
+    ```
+    src/app/features/
+      shopping-cart/
+        shopping-cart.ts
+        components/           # Cart-specific components
+      user-profile/
+        user-profile.ts
+        components/           # Profile-specific components
+      shared/
+        components/
+          button.ts          # ✅ Used by 2+ features
+    ```
+
+    <Note>
+      The Angular agent enforces modern Angular 20 patterns including standalone components, `input()` and `output()` functions, and `ChangeDetectionStrategy.OnPush`.
+    </Note>
+  </Tab>
+
+  <Tab title="Next.js">
+    ### Next.js Example
+
+    The **scope-rule-architect-nextjs** agent specializes in Next.js 15+ with App Router, Server Components, and performance-first architecture.
+
+    #### Ask the Agent
+
+    ```
+    I have a ProductCard component that will be used in the shop page,
+    the cart page, and the wishlist feature. Where should I put it?
+    Should it be a Server or Client Component?
+    ```
+
+    #### Agent Response
+
+    The agent will determine that since ProductCard is used by **3+ routes** (shop, cart, wishlist), it must go in the **shared/components** directory. It will also analyze whether it needs client-side interactivity:
+
+    ```typescript
+    // src/shared/components/product-card.tsx
+    import Image from 'next/image';
+    import { AddToCartButton } from './add-to-cart-button';
+
+    interface ProductCardProps {
+      id: string;
+      name: string;
+      price: number;
+      image: string;
+      description: string;
+    }
+
+    // Server Component by default
+    export function ProductCard({ id, name, price, image, description }: ProductCardProps) {
+      return (
+        <div className="product-card">
+          <Image
+            src={image}
+            alt={name}
+            width={300}
+            height={300}
+            className="rounded-lg"
+          />
+          <h3 className="text-xl font-bold">{name}</h3>
+          <p className="text-gray-600">{description}</p>
+          <div className="flex items-center justify-between">
+            <span className="text-2xl font-bold">${price}</span>
+            <AddToCartButton productId={id} />
+          </div>
+        </div>
+      );
+    }
+    ```
+
+    #### Project Structure
+
+    ```
+    src/
+      app/
+        (shop)/
+          shop/
+            page.tsx
+            _components/      # Shop-specific components
+          cart/
+            page.tsx
+            _components/      # Cart-specific components
+          wishlist/
+            page.tsx
+            _components/      # Wishlist-specific components
+      shared/
+        components/
+          product-card.tsx   # ✅ Used by 3+ routes
+    ```
+
+    <Note>
+      The Next.js agent enforces Server Components by default, using `"use client"` only when client-side interactivity is required. It also uses route groups for organization without affecting URL structure.
+    </Note>
+  </Tab>
+
+  <Tab title="Astro">
+    ### Astro Example
+
+    The **scope-rule-architect-astro** agent specializes in Astro 5+ with Islands Architecture, Content Collections, and minimal JavaScript.
+
+    #### Ask the Agent
+
+    ```
+    I have a Newsletter component that will be used in the blog sidebar
+    and the footer. Should it be an island? Where should I place it?
+    ```
+
+    #### Agent Response
+
+    The agent will determine that since Newsletter is used by **2+ pages** (blog and footer), it must go in the **shared/components** or **shared/islands** directory. It will also analyze whether it needs to be an interactive island:
+
+    ```tsx
+    // src/components/islands/Newsletter.tsx
+    import { useState } from 'react';
+
+    export default function Newsletter() {
+      const [email, setEmail] = useState('');
+      const [isSubmitting, setIsSubmitting] = useState(false);
+      const [message, setMessage] = useState('');
+
+      const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+
+        try {
+          const response = await fetch('/api/newsletter', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email }),
+          });
+
+          if (response.ok) {
+            setMessage('Thanks for subscribing!');
+            setEmail('');
+          }
+        } catch (error) {
+          setMessage('Something went wrong. Please try again.');
+        } finally {
+          setIsSubmitting(false);
+        }
+      };
+
+      return (
+        <form onSubmit={handleSubmit} className="newsletter-form">
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Enter your email"
+            required
+          />
+          <button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Subscribing...' : 'Subscribe'}
+          </button>
+          {message && <p>{message}</p>}
+        </form>
+      );
+    }
+    ```
+
+    ```astro
+    ---
+    // src/components/layout/Footer.astro
+    import Newsletter from '../islands/Newsletter';
+    ---
+
+    <footer>
+      <div class="footer-content">
+        <h3>Stay Updated</h3>
+        <Newsletter client:load />
+      </div>
+    </footer>
+    ```
+
+    #### Project Structure
+
+    ```
+    src/
+      pages/
+        blog/
+          index.astro
+          components/         # Blog-specific components
+            blog-card.astro
+      components/
+        islands/
+          Newsletter.tsx     # ✅ Used by 2+ pages (interactive)
+        layout/
+          Footer.astro
+          Header.astro
+    ```
+
+    <Note>
+      The Astro agent enforces static-first architecture with islands only for interactive components. It uses `client:*` directives strategically to minimize JavaScript.
+    </Note>
+  </Tab>
+
+  <Tab title="React">
+    ### React Example
+
+    The **scope-rule-architect-react** agent specializes in React 19+ projects with TypeScript, modern hooks, and container/presentational patterns.
+
+    #### Ask the Agent
+
+    ```
+    I'm building an e-commerce app with shopping cart and user authentication.
+    Where should I place a LoadingSpinner component that's used in both features?
+    ```
+
+    #### Agent Response
+
+    The agent will determine that since LoadingSpinner is used by **2+ features**, it must go in the **shared/components** directory:
+
+    ```typescript
+    // src/shared/components/LoadingSpinner.tsx
+    interface LoadingSpinnerProps {
+      size?: 'sm' | 'md' | 'lg';
+      className?: string;
+    }
+
+    export function LoadingSpinner({ size = 'md', className = '' }: LoadingSpinnerProps) {
+      const sizeClasses = {
+        sm: 'w-4 h-4',
+        md: 'w-8 h-8',
+        lg: 'w-12 h-12',
+      };
+
+      return (
+        <div className={`animate-spin ${sizeClasses[size]} ${className}`}>
+          <svg
+            className="w-full h-full"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg">
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+            />
+          </svg>
+        </div>
+      );
+    }
+    ```
+
+    #### Project Structure
+
+    ```
+    src/
+      features/
+        shopping-cart/
+          shopping-cart.tsx
+          components/         # Cart-specific components
+        authentication/
+          authentication.tsx
+          components/         # Auth-specific components
+      shared/
+        components/
+          LoadingSpinner.tsx # ✅ Used by 2+ features
+    ```
+
+    <Note>
+      The React agent enforces the container/presentational pattern and ensures the main container component matches the feature name.
+    </Note>
+  </Tab>
+</Tabs>
+
+## Common Patterns
+
+### Local Component (1 Feature)
+
+If a component is only used within a single feature, it stays local:
+
+```
+User: I have a CartSummary component only used in the shopping cart feature.
+
+Agent: Since CartSummary is used by only 1 feature, it MUST stay local
+within the shopping-cart feature directory.
+```
+
+### Shared Component (2+ Features)
+
+If a component is used across multiple features, it moves to shared:
+
+```
+User: I have a Button component used in cart, profile, and checkout.
+
+Agent: Since Button is used by 3 features, it MUST go in the shared/components
+directory.
+```
+
+### Refactoring Existing Code
+
+The agents can help restructure existing projects:
+
+```
+User: My components are all in a single components folder. How should I restructure?
+
+Agent: I'll analyze your component usage and create a structure following the
+Scope Rule, organizing components by feature with shared components extracted.
+```
+
+## Best Practices
+
+<Card title="Start Local, Move to Shared" icon="arrow-right">
+  When uncertain about future usage, start with local placement. Refactor to shared when you actually need the component in a second feature.
 </Card>
 
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
+<Card title="Let Structure Scream" icon="megaphone">
+  Your directory structure should immediately communicate what your application does. Use business domain names for features, not technical terms.
 </Card>
 
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
+<Card title="Enforce Strictly" icon="shield">
+  The Scope Rule has no exceptions. This strictness prevents architectural debt and keeps your codebase maintainable as it scales.
 </Card>
 
-</CardGroup>
+## Next Steps
 
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>
+- Explore framework-specific patterns in the agent documentation
+- Learn about [Screaming Architecture](https://blog.cleancoder.com/uncle-bob/2011/09/30/Screaming-Architecture.html) principles
+- Join the [Gentleman Programming](https://doras.to/gentleman-programming) community for discussions and support

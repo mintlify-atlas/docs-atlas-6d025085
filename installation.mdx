@@ -1,0 +1,124 @@
+---
+title: Installation
+description: Install Claude Code Scope Rule Architects and start building scalable, well-organized frontend applications
+---
+
+## Prerequisites
+
+Before installing Scope Rule Architects, ensure you have:
+
+<Note>
+  **Claude Code** must be installed on your system. Follow the [official Claude Code documentation](https://docs.anthropic.com/en/docs/claude-code) to get started.
+</Note>
+
+## Installation Steps
+
+<Steps>
+  <Step title="Locate the agent files">
+    Clone or download the Scope Rule Architects repository to access the agent files:
+
+    ```bash
+    git clone https://github.com/alanbuscaglia/claude-agents.git
+    cd claude-agents
+    ```
+
+    You'll find these agent files in the `.claude/agents/` directory:
+    - `scope-rule-architect-angular.md`
+    - `scope-rule-architect-nextjs.md`
+    - `scope-rule-architect-astro.md`
+    - `scope-rule-architect-react.md`
+  </Step>
+
+  <Step title="Copy agents to your Claude directory">
+    Copy the agent files you need to your local `.claude/agents/` directory:
+
+    <CodeGroup>
+      ```bash macOS/Linux
+      # Copy all agents
+      cp .claude/agents/scope-rule-architect-*.md ~/.claude/agents/
+
+      # Or copy specific agents
+      cp .claude/agents/scope-rule-architect-angular.md ~/.claude/agents/
+      cp .claude/agents/scope-rule-architect-nextjs.md ~/.claude/agents/
+      ```
+
+      ```powershell Windows (PowerShell)
+      # Copy all agents
+      Copy-Item .claude\agents\scope-rule-architect-*.md $env:USERPROFILE\.claude\agents\
+
+      # Or copy specific agents
+      Copy-Item .claude\agents\scope-rule-architect-angular.md $env:USERPROFILE\.claude\agents\
+      Copy-Item .claude\agents\scope-rule-architect-nextjs.md $env:USERPROFILE\.claude\agents\
+      ```
+
+      ```cmd Windows (CMD)
+      REM Copy all agents
+      copy .claude\agents\scope-rule-architect-*.md %USERPROFILE%\.claude\agents\
+
+      REM Or copy specific agents
+      copy .claude\agents\scope-rule-architect-angular.md %USERPROFILE%\.claude\agents\
+      copy .claude\agents\scope-rule-architect-nextjs.md %USERPROFILE%\.claude\agents\
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Verify installation">
+    Verify the agents are properly installed by checking your `.claude/agents/` directory:
+
+    <CodeGroup>
+      ```bash macOS/Linux
+      ls -la ~/.claude/agents/
+      ```
+
+      ```powershell Windows (PowerShell)
+      Get-ChildItem $env:USERPROFILE\.claude\agents\
+      ```
+
+      ```cmd Windows (CMD)
+      dir %USERPROFILE%\.claude\agents\
+      ```
+    </CodeGroup>
+
+    You should see the agent files listed:
+    - `scope-rule-architect-angular.md`
+    - `scope-rule-architect-nextjs.md`
+    - `scope-rule-architect-astro.md`
+    - `scope-rule-architect-react.md`
+  </Step>
+
+  <Step title="Open Claude Code">
+    Launch Claude Code in your project directory. The agents are now available and will be automatically invoked when you ask architectural questions related to component placement and project structure.
+  </Step>
+</Steps>
+
+## Optional: MCP Integration
+
+<Warning>
+  Some agents integrate with Model Context Protocol (MCP) servers for enhanced documentation access:
+</Warning>
+
+### Angular Agent
+
+The Angular agent uses the **Angular CLI MCP** server for accessing Angular documentation:
+
+- Install the Angular CLI MCP server following the [Angular CLI MCP documentation](https://github.com/modelcontextprotocol/servers/tree/main/src/angular-cli)
+- The agent will automatically use `mcp__angular-cli__search_documentation` and `mcp__angular-cli__get_best_practices` tools
+
+### Astro Agent
+
+The Astro agent uses the **Astro Docs MCP** server for accessing Astro documentation:
+
+- Install the Astro Docs MCP server following the [Astro Docs MCP documentation](https://github.com/modelcontextprotocol/servers/tree/main/src/astro-docs)
+- The agent will automatically use `mcp__astro-docs__search_astro_docs` tool
+
+### Next.js Agent
+
+The Next.js agent has built-in Next.js knowledge and doesn't require additional MCP setup.
+
+### React Agent
+
+The React agent focuses on general React patterns and doesn't require additional MCP setup.
+
+## Next Steps
+
+Now that you've installed the agents, proceed to the [Quickstart](/quickstart) to learn how to use them in your projects.

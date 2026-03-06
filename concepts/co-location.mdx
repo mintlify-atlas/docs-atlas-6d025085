@@ -1,0 +1,560 @@
+---
+title: 'Co-location'
+description: 'The practice of keeping related code together for better maintainability and mental model alignment'
+---
+
+## What is Co-location?
+
+Co-location is the practice of placing related code in close proximity within your project structure. Instead of organizing by technical type, co-location organizes by business domain and usage patterns.
+
+<Info>
+**Co-location Principle**
+
+Code that changes together should live together. Code that's used together should be stored together.
+</Info>
+
+## Why Co-location Matters
+
+### The Problem with Separation
+
+Traditional architecture separates code by technical concerns:
+
+```typescript
+src/
+  components/
+    LoginForm.tsx              # Login UI
+    PasswordReset.tsx          # Password reset UI
+    ProductCard.tsx            # Product display
+    CartItem.tsx               # Cart display
+  services/
+    auth.ts                    # Login logic
+    products.ts                # Product logic
+    cart.ts                    # Cart logic
+  hooks/
+    useAuth.ts                 # Login state
+    useCart.ts                 # Cart state
+  types/
+    auth.ts                    # Login types
+    product.ts                 # Product types
+```
+
+**Problems:**
+- Working on login requires jumping between 4 directories
+- No clear boundaries between features
+- Hard to move or refactor features as units
+- Mental overhead tracking related files
+
+### The Co-location Solution
+
+```typescript
+src/
+  features/
+    authentication/
+      authentication.tsx       # Main component
+      components/
+        LoginForm.tsx
+        PasswordReset.tsx
+      services/
+        auth.ts
+      hooks/
+        useAuth.ts
+      models.ts                # Auth types
+    product-catalog/
+      product-catalog.tsx
+      components/
+        ProductCard.tsx
+        ProductGrid.tsx
+      services/
+        products.ts
+      hooks/
+        useProducts.ts
+      models.ts                # Product types
+```
+
+**Benefits:**
+- Everything for authentication is in one place
+- Clear feature boundaries
+- Easy to refactor or move entire features
+- Reduced mental overhead
+
+## Co-location Across Frameworks
+
+### Next.js Co-location
+
+From the Next.js Scope Rule Architect:
+
+```typescript
+src/
+  app/
+    (shop)/                        # Shop feature route group
+      shop/
+        page.tsx                   # /shop route
+        _components/               # ✅ Co-located: shop-specific components
+          product-list.tsx
+          product-filter.tsx
+          product-sort.tsx
+        loading.tsx                # Loading UI for shop
+      cart/
+        page.tsx                   # /cart route
+        _components/               # ✅ Co-located: cart-specific components
+          cart-item.tsx
+          cart-summary.tsx
+          checkout-button.tsx
+        _hooks/                    # ✅ Co-located: cart-specific hooks
+          use-cart.ts
+        _actions/                  # ✅ Co-located: cart server actions
+          cart-actions.ts
+        loading.tsx                # Loading UI for cart
+      _hooks/                      # ✅ Co-located: shared shop hooks
+        use-products.ts
+        use-wishlist.ts
+      _types.ts                    # ✅ Co-located: shop types
+      layout.tsx                   # Shop layout
+```
+
+**What's co-located:**
+- Product listing logic stays with the shop page
+- Cart management logic stays with the cart page
+- Shared shop utilities stay within the `(shop)` route group
+- Each page has its own loading states and components nearby
+
+**Benefits:**
+- Need to work on cart? Everything's in `app/(shop)/cart/`
+- Need to understand shop? Look in `app/(shop)/`
+- Want to refactor the entire shop feature? It's all self-contained
+
+### Angular Co-location
+
+From the Angular Scope Rule Architect:
+
+```typescript
+src/
+  app/
+    features/
+      shopping-cart/
+        shopping-cart.ts           # ✅ Main standalone component
+        components/                # ✅ Co-located: cart-specific components
+          cart-items-list.ts
+          cart-item.ts
+          cart-summary.ts
+          checkout-button.ts
+        services/                  # ✅ Co-located: cart services
+          cart.ts
+          cart-storage.ts
+        guards/                    # ✅ Co-located: cart guards
+          cart-access-guard.ts
+        signals/                   # ✅ Co-located: cart state
+          cart-state.ts
+        models.ts                  # ✅ Co-located: cart types
+        utils.ts                   # ✅ Co-located: cart utilities
+```
+
+**What's co-located:**
+- All cart components live with the cart feature
+- Cart state management (signals) is local
+- Cart-specific services and guards are nearby
+- Cart types and utilities are together
+
+**Benefits:**
+- Single source of truth for cart functionality
+- Easy to test cart as an isolated unit
+- Can move or refactor cart without touching other features
+- New developers find everything cart-related in one place
+
+### Astro Co-location
+
+From the Astro Scope Rule Architect:
+
+```typescript
+src/
+  pages/
+    blog/
+      [...slug].astro              # Blog post pages
+      index.astro                  # Blog listing
+      components/                  # ✅ Co-located: blog components
+        blog-card.astro           # Static blog preview
+        blog-sidebar.astro        # Static sidebar
+        blog-header.astro         # Blog header
+        comment-form.tsx          # Interactive comment island
+        share-buttons.tsx         # Interactive sharing island
+      utils/                       # ✅ Co-located: blog utilities
+        blog-helpers.ts
+        date-formatting.ts
+        excerpt-generator.ts
+```
+
+**What's co-located:**
+- Blog pages and their specific components
+- Blog utilities for date formatting and excerpts
+- Both static components and interactive islands
+- Blog-specific helper functions
+
+**Benefits:**
+- Blog functionality is self-contained
+- Easy to see what's static vs. interactive
+- Can understand blog feature without looking elsewhere
+- Simple to add new blog-specific features
+
+### React Co-location
+
+From the React Scope Rule Architect:
+
+```typescript
+src/
+  features/
+    product-catalog/
+      product-catalog.tsx          # ✅ Main container component
+      components/                  # ✅ Co-located: presentational components
+        ProductGrid.tsx
+        ProductCard.tsx
+        ProductSearch.tsx
+        CategoryFilter.tsx
+      services/                    # ✅ Co-located: catalog services
+        product-api.ts
+        product-cache.ts
+      hooks/                       # ✅ Co-located: catalog hooks
+        useProducts.ts
+        useProductSearch.ts
+        useCategories.ts
+      models.ts                    # ✅ Co-located: catalog types
+      utils.ts                     # ✅ Co-located: catalog utilities
+```
+
+**What's co-located:**
+- Container and presentational components for catalog
+- Product fetching and caching logic
+- Custom hooks for product operations
+- Type definitions for products
+- Catalog-specific utility functions
+
+## How Co-location Works with the Scope Rule
+
+Co-location and the Scope Rule work together:
+
+<Steps>
+  <Step title="Start with Usage">
+    Identify what features use the code. This determines scope.
+  </Step>
+  <Step title="Apply the Scope Rule">
+    - 1 feature → co-locate with that feature
+    - 2+ features → co-locate in shared/
+  </Step>
+  <Step title="Organize by Domain">
+    Within each feature, co-locate by sub-domain (components, services, hooks, etc.)
+  </Step>
+</Steps>
+
+### Example: ProductCard Journey
+
+Let's trace a component through its lifecycle:
+
+<Tabs>
+  <Tab title="Stage 1: Single Feature">
+    ```typescript
+    src/
+      features/
+        product-catalog/
+          components/
+            ProductCard.tsx    # ✅ Only used in catalog
+    ```
+    **Status:** Co-located with product-catalog because only that feature uses it.
+  </Tab>
+  <Tab title="Stage 2: Two Features">
+    ```typescript
+    src/
+      features/
+        shopping-cart/
+          shopping-cart.tsx
+          # Now needs ProductCard
+        product-catalog/
+          components/
+            ProductCard.tsx    # ❌ Violates Scope Rule
+      shared/
+        components/
+          ProductCard.tsx      # ✅ Move here - used by 2 features
+    ```
+    **Status:** Must move to shared/ when cart feature starts using it.
+  </Tab>
+  <Tab title="Stage 3: Multiple Features">
+    ```typescript
+    src/
+      features/
+        product-catalog/       # Uses ProductCard
+        shopping-cart/         # Uses ProductCard
+        wishlist/              # Uses ProductCard
+        order-history/         # Uses ProductCard
+      shared/
+        components/
+          ProductCard.tsx      # ✅ Correctly shared
+    ```
+    **Status:** Remains in shared/ as it's used across the application.
+  </Tab>
+</Tabs>
+
+## Benefits of Co-location
+
+<CardGroup cols={2}>
+  <Card title="Mental Model Alignment" icon="brain">
+    Code is where you expect it. Working on authentication? Everything you need is in `authentication/`.
+  </Card>
+  <Card title="Reduced Context Switching" icon="arrows-left-right">
+    No jumping between `components/`, `services/`, `hooks/`, `types/` directories. Everything related is nearby.
+  </Card>
+  <Card title="Easier Refactoring" icon="wrench">
+    Move features as complete, self-contained units. No hunting for scattered dependencies.
+  </Card>
+  <Card title="Clear Boundaries" icon="border-all">
+    Obvious where one feature ends and another begins. Prevents unintended coupling.
+  </Card>
+  <Card title="Team Collaboration" icon="users">
+    Multiple teams can work on different features without stepping on each other's toes.
+  </Card>
+  <Card title="Faster Onboarding" icon="rocket">
+    New developers understand feature boundaries immediately. No "where do I find..." questions.
+  </Card>
+</CardGroup>
+
+## Co-location Best Practices
+
+### 1. Keep Feature Structure Consistent
+
+Each feature should follow the same internal structure:
+
+<Tabs>
+  <Tab title="Next.js">
+    ```typescript
+    (feature)/
+      page-name/
+        page.tsx
+        _components/
+        _hooks/
+        _actions/
+        loading.tsx
+      _types.ts
+      layout.tsx
+    ```
+  </Tab>
+  <Tab title="Angular">
+    ```typescript
+    feature-name/
+      feature-name.ts
+      components/
+      services/
+      guards/
+      signals/
+      models.ts
+    ```
+  </Tab>
+  <Tab title="Astro">
+    ```typescript
+    feature-name/
+      index.astro
+      [slug].astro
+      components/
+      utils/
+    ```
+  </Tab>
+  <Tab title="React">
+    ```typescript
+    feature-name/
+      feature-name.tsx
+      components/
+      services/
+      hooks/
+      models.ts
+    ```
+  </Tab>
+</Tabs>
+
+### 2. Use Clear Sub-directories
+
+Within features, organize by technical type for clarity:
+
+- `components/` - UI components
+- `services/` - Business logic and API calls
+- `hooks/` - Custom React/framework hooks
+- `models.ts` or `types.ts` - Type definitions
+- `utils.ts` - Utility functions
+- `constants.ts` - Feature-specific constants
+
+### 3. Co-locate Tests with Code
+
+<Tabs>
+  <Tab title="Next to Source">
+    ```typescript
+    features/
+      shopping-cart/
+        components/
+          cart-item.tsx
+          cart-item.test.tsx     # ✅ Test next to component
+        services/
+          cart.ts
+          cart.test.ts           # ✅ Test next to service
+    ```
+  </Tab>
+  <Tab title="Test Directory">
+    ```typescript
+    features/
+      shopping-cart/
+        components/
+          cart-item.tsx
+        __tests__/
+          components/
+            cart-item.test.tsx   # ✅ Also acceptable
+    ```
+  </Tab>
+</Tabs>
+
+### 4. Document Feature Dependencies
+
+If a feature depends on another feature's code, this might indicate:
+- Code should be moved to shared/
+- Features are too coupled
+- Feature boundaries need reconsidering
+
+## Common Questions
+
+<AccordionGroup>
+  <Accordion title="What if a component needs data from another feature?">
+    Use shared services or state management. The component itself stays co-located with its feature, but it can import from `shared/services/` or use a global store. The key is the component's placement follows the Scope Rule.
+  </Accordion>
+  
+  <Accordion title="Should I co-locate types that are used across files?">
+    Yes, but apply the Scope Rule. If types are only used within one feature, keep them in that feature's `models.ts` or `types.ts`. If used by 2+ features, move to `shared/types/`.
+  </Accordion>
+  
+  <Accordion title="What about infrastructure code like API clients?">
+    Infrastructure that's used across features goes in `lib/` or `infrastructure/`. This includes:
+    - HTTP clients
+    - Authentication setup
+    - Database connections
+    - Logging utilities
+    
+    These are cross-cutting concerns, not feature-specific, so they don't follow feature co-location.
+  </Accordion>
+  
+  <Accordion title="Can features have sub-features?">
+    Yes, in Next.js this is natural with nested routes. In other frameworks, consider whether the sub-feature is truly distinct. If it's always used with the parent, keep it co-located. If it could be used independently, make it a separate feature.
+  </Accordion>
+  
+  <Accordion title="How deep should co-location go?">
+    Generally 2-3 levels deep within a feature:
+    ```
+    feature/
+      feature.tsx              (level 1)
+      components/              (level 2)
+        sub-feature/           (level 3)
+          complex-component.tsx
+    ```
+    Deeper than this might indicate the feature is too complex and should be split.
+  </Accordion>
+</AccordionGroup>
+
+## Anti-Patterns to Avoid
+
+<Warning>
+**The "Shared by Default" Anti-Pattern**
+
+Don't put code in shared/ "just in case" it might be used elsewhere. This defeats co-location. Start local, move to shared when actually needed.
+</Warning>
+
+<Warning>
+**The "Feature Soup" Anti-Pattern**
+
+Co-location doesn't mean throwing everything into one folder. Maintain internal structure with `components/`, `services/`, `hooks/`, etc. within each feature.
+</Warning>
+
+<Warning>
+**The "Deep Nesting" Anti-Pattern**
+
+```typescript
+# ❌ Too deep
+features/
+  shop/
+    products/
+      list/
+        components/
+          grid/
+            card/
+              card.tsx
+```
+
+If you're more than 3-4 levels deep, your feature is probably too complex.
+</Warning>
+
+## Real-World Example
+
+Let's see co-location in a real e-commerce scenario:
+
+<Tabs>
+  <Tab title="Before (Separated)">
+    ```typescript
+    src/
+      components/
+        ProductCard.tsx
+        ProductList.tsx
+        CartItem.tsx
+        CartSummary.tsx
+        CheckoutForm.tsx
+      services/
+        products.ts
+        cart.ts
+        checkout.ts
+      hooks/
+        useProducts.ts
+        useCart.ts
+        useCheckout.ts
+    ```
+    **Problems:**
+    - Need to modify cart? Touch 3+ directories
+    - Unclear what belongs where
+    - Hard to refactor or test in isolation
+  </Tab>
+  <Tab title="After (Co-located)">
+    ```typescript
+    src/
+      features/
+        product-catalog/
+          product-catalog.tsx
+          components/
+            ProductCard.tsx
+            ProductList.tsx
+          services/
+            products.ts
+          hooks/
+            useProducts.ts
+        shopping-cart/
+          shopping-cart.tsx
+          components/
+            CartItem.tsx
+            CartSummary.tsx
+          services/
+            cart.ts
+          hooks/
+            useCart.ts
+        checkout/
+          checkout.tsx
+          components/
+            CheckoutForm.tsx
+          services/
+            checkout.ts
+          hooks/
+            useCheckout.ts
+    ```
+    **Benefits:**
+    - Cart modification? Everything's in `shopping-cart/`
+    - Clear feature boundaries
+    - Easy to test, refactor, or move entire features
+  </Tab>
+</Tabs>
+
+## Further Reading
+
+<CardGroup cols={2}>
+  <Card title="The Scope Rule" href="/concepts/scope-rule">
+    Learn how the Scope Rule determines what gets co-located where
+  </Card>
+  <Card title="Screaming Architecture" href="/concepts/screaming-architecture">
+    Understand how co-location enables architecture that communicates intent
+  </Card>
+</CardGroup>

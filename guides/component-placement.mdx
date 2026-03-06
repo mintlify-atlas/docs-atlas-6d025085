@@ -1,0 +1,364 @@
+---
+title: Component Placement Decisions
+description: A step-by-step guide to making component placement decisions using the Scope Rule
+icon: map-pin
+---
+
+The Scope Rule provides a clear, systematic approach to determining where components should live in your project. This guide walks you through the decision-making process with real examples.
+
+## The Core Principle
+
+**"Scope determines structure"**
+
+This fundamental rule drives all placement decisions:
+
+- **Code used by 2+ features** → MUST go in global/shared directories
+- **Code used by 1 feature** → MUST stay local in that feature
+- **NO EXCEPTIONS** - This rule is absolute and non-negotiable
+
+## Decision Framework
+
+<Steps>
+  <Step title="Count the Usage">
+    Identify exactly how many features use the component. Be precise and systematic:
+
+    - Review all imports of the component
+    - Count unique feature directories that import it
+    - Don't count multiple components within the same feature as separate uses
+
+    **Example:**
+    ```typescript
+    // If ProductCard is imported by:
+    // - src/features/shop/products/page.tsx
+    // - src/features/shop/cart/page.tsx
+    // - src/features/wishlist/page.tsx
+    
+    // That's 2 features (shop + wishlist) → Goes in shared/
+    ```
+  </Step>
+
+  <Step title="Apply the Scope Rule">
+    Based on your count, apply the rule strictly:
+
+    **1 Feature = Local Placement**
+    ```
+    src/features/shop/
+      products/
+        components/
+          product-filter.tsx  # Only used by products
+    ```
+
+    **2+ Features = Shared Placement**
+    ```
+    src/shared/
+      components/
+        product-card.tsx  # Used by shop, cart, wishlist
+    ```
+  </Step>
+
+  <Step title="Validate Against Framework Patterns">
+    Ensure your placement aligns with framework-specific best practices:
+
+    <Tabs>
+      <Tab title="Angular">
+        - All components MUST be standalone (Angular 20+)
+        - Use `ChangeDetectionStrategy.OnPush` for all components
+        - Leverage signals with `signal()`, `computed()`, and `effect()`
+        - Place signal stores locally or globally based on scope
+
+        ```typescript
+        // Local signal store: src/features/shop/signals/cart.signal.ts
+        import { signal, computed } from '@angular/core';
+
+        const _cartItems = signal<CartItem[]>([]);
+        export const cartItems = _cartItems.asReadonly();
+        export const cartTotal = computed(() => 
+          _cartItems().reduce((sum, item) => sum + item.price, 0)
+        );
+        ```
+      </Tab>
+
+      <Tab title="Next.js">
+        - Server Components by default, Client Components when needed
+        - Use route groups for organization: `(auth)`, `(shop)`, `(dashboard)`
+        - Co-locate with private folders: `_components`, `_hooks`, `_actions`
+        - Server Actions MUST use `"server-only"` package
+
+        ```typescript
+        // Local to shop feature: app/(shop)/_components/product-filter.tsx
+        'use client';
+
+        export function ProductFilter() {
+          // Client-side filtering logic
+        }
+        ```
+
+        ```typescript
+        // Shared across features: src/shared/components/product-card.tsx
+        // Server Component by default
+        export function ProductCard({ product }: Props) {
+          return (
+            <article>
+              <h2>{product.name}</h2>
+              <p>${product.price}</p>
+            </article>
+          );
+        }
+        ```
+      </Tab>
+
+      <Tab title="Astro">
+        - Static components by default, islands only when needed
+        - Use client directives sparingly: `client:load`, `client:idle`, `client:visible`
+        - Framework-agnostic: mix React, Vue, Svelte islands
+        - Co-locate with pages: `pages/blog/components/`
+
+        ```astro
+        ---
+        // Local to blog: src/pages/blog/components/blog-card.astro
+        // Static by default - no JavaScript shipped
+        export interface Props {
+          title: string;
+          excerpt: string;
+        }
+        const { title, excerpt } = Astro.props;
+        ---
+        <article class="blog-card">
+          <h2>{title}</h2>
+          <p>{excerpt}</p>
+        </article>
+        ```
+
+        ```tsx
+        // Shared island: src/components/islands/Newsletter.tsx
+        // Client-side interactivity needed
+        export default function Newsletter() {
+          const [email, setEmail] = useState('');
+          // Interactive form logic
+        }
+        ```
+      </Tab>
+
+      <Tab title="React">
+        - Use Container/Presentational pattern
+        - Main container MUST match feature name
+        - Implement proper component composition
+
+        ```typescript
+        // Local container: src/features/shop/shop.tsx
+        export function Shop() {
+          // Business logic and state management
+          return <ShopView products={products} />;
+        }
+
+        // Shared component: src/shared/components/button.tsx
+        export function Button({ children, onClick }: Props) {
+          return <button onClick={onClick}>{children}</button>;
+        }
+        ```
+      </Tab>
+    </Tabs>
+  </Step>
+
+  <Step title="Document Your Decision">
+    Explain WHY the placement was chosen. This creates shared understanding:
+
+    ```typescript
+    /**
+     * ProductCard - Shared Component
+     * 
+     * Used by:
+     * - Shop feature (product listing)
+     * - Cart feature (cart items display)
+     * - Wishlist feature (saved items)
+     * 
+     * Placement: /src/shared/components/product-card.tsx
+     * Reason: Used by 3 features (2+ rule) → Must be in shared/
+     */
+    export function ProductCard({ product }: Props) {
+      // Implementation
+    }
+    ```
+  </Step>
+
+  <Step title="Verify Future-Proofing">
+    Ask these final validation questions:
+
+    - Can a new developer understand the app structure immediately?
+    - Will this placement scale as features grow?
+    - Does the structure "scream" what the application does?
+    - Are you following framework-specific optimizations?
+  </Step>
+</Steps>
+
+## Real-World Examples
+
+### Example 1: Authentication Component
+
+**Scenario:** `SocialLogin` component used in both login and register pages.
+
+**Analysis:**
+```
+Used by:
+- features/auth/login/
+- features/auth/register/
+
+Count: 2 sub-routes within same auth feature = 1 feature
+Decision: Place in features/auth/components/social-login.tsx
+```
+
+**Reasoning:** Both login and register are part of the same authentication feature. The component is shared within that feature boundary, not across multiple features.
+
+### Example 2: UI Button Component
+
+**Scenario:** `Button` component used throughout the application.
+
+**Analysis:**
+```
+Used by:
+- features/auth/ (login, register)
+- features/shop/ (add to cart, checkout)
+- features/profile/ (edit profile, settings)
+
+Count: 3 distinct features
+Decision: Place in shared/components/ui/button.tsx
+```
+
+**Reasoning:** Used by 2+ features (actually 3), so it must go in shared directory. This is a clear-cut case for global placement.
+
+### Example 3: Next.js Server Action
+
+**Scenario:** `productActions` used only within shop feature.
+
+**Analysis:**
+```typescript
+// app/(shop)/_actions/product-actions.ts
+import "server-only";
+
+export async function addToCart(productId: string) {
+  // Server-side mutation logic
+}
+
+// Used only by:
+// - app/(shop)/products/page.tsx
+// - app/(shop)/products/[slug]/page.tsx
+
+Count: 1 feature (shop)
+Decision: Keep in (shop)/_actions/
+```
+
+**Reasoning:** Server Actions are scoped to the shop feature. Even though used by multiple pages, they're all within the same route group.
+
+## Edge Cases and Special Considerations
+
+<AccordionGroup>
+  <Accordion title="What if I'm unsure about future usage?">
+    **Start local, refactor when needed.**
+
+    When uncertain:
+    1. Place the component locally within the feature
+    2. Add a comment noting potential for extraction
+    3. When a second feature needs it, move to shared/
+    4. Update all imports
+
+    This prevents premature optimization while maintaining flexibility.
+  </Accordion>
+
+  <Accordion title="How do I handle route-specific components in Next.js?">
+    **Use private folders for co-location.**
+
+    ```
+    app/
+      (shop)/
+        products/
+          _components/       # Only for products route
+            product-filter.tsx
+        cart/
+          _components/       # Only for cart route
+            cart-summary.tsx
+        _components/         # Shared within shop feature
+          shop-header.tsx
+    ```
+
+    Private folders (`_components`) keep route-specific code co-located without polluting the routing system.
+  </Accordion>
+
+  <Accordion title="When should Astro components be islands vs static?">
+    **Static by default, islands only when absolutely necessary.**
+
+    Use client islands when you need:
+    - User interaction (forms, buttons that mutate state)
+    - Real-time updates (live chat, notifications)
+    - Client-side state management
+
+    ```astro
+    <!-- Static: no interactivity needed -->
+    <ProductCard title="Product" price="$99" />
+
+    <!-- Island: needs user interaction -->
+    <AddToCart client:load productId="123" />
+    ```
+
+    Placement rule applies equally to both static components and islands.
+  </Accordion>
+
+  <Accordion title="How do I handle Angular signal stores?">
+    **Apply the same scope rule to state management.**
+
+    ```typescript
+    // Local: features/shop/signals/cart.signal.ts
+    // Only shop feature needs cart state
+    const _cartState = signal<CartState>({ items: [] });
+
+    // Shared: shared/signals/theme.signal.ts
+    // Multiple features need theme state
+    const _themeState = signal<Theme>('light');
+    ```
+
+    State management follows the same scoping rules as components.
+  </Accordion>
+
+  <Accordion title="What about utilities and helper functions?">
+    **Same rule applies to all code, not just components.**
+
+    ```typescript
+    // Local utility: features/shop/utils/price-formatter.ts
+    export function formatPrice(price: number) {
+      // Only used within shop feature
+    }
+
+    // Shared utility: shared/utils/date-formatter.ts
+    export function formatDate(date: Date) {
+      // Used by blog, shop, dashboard
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Quality Checklist
+
+Before finalizing any placement decision, verify:
+
+- [ ] **Scope verification**: Have you correctly counted feature usage?
+- [ ] **Framework compliance**: Are you using framework-specific best practices?
+- [ ] **Naming validation**: Do component names follow conventions?
+- [ ] **Screaming test**: Can someone understand the structure at a glance?
+- [ ] **Performance**: Are you optimizing for bundle size and rendering?
+- [ ] **Future-proofing**: Will this scale as the application grows?
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Project Setup" icon="folder-tree" href="/guides/project-setup">
+    Learn how to set up new projects with proper structure from the start
+  </Card>
+  <Card title="Migration Guide" icon="arrows-turn-right" href="/guides/migration">
+    Restructure existing projects to follow the Scope Rule
+  </Card>
+  <Card title="Best Practices" icon="circle-check" href="/guides/best-practices">
+    Quality checks and patterns for maintaining clean architecture
+  </Card>
+  <Card title="Agents Reference" icon="robot" href="/agents">
+    Explore framework-specific agents for automated guidance
+  </Card>
+</CardGroup>

@@ -1,0 +1,534 @@
+---
+title: Feature Structure Patterns
+description: How to organize code within features following co-location and the Scope Rule
+---
+
+## Feature-First Organization
+
+Features are the primary organizing principle. Each feature represents a business capability and contains everything it needs to function.
+
+## Anatomy of a Feature
+
+A well-structured feature follows this pattern:
+
+```
+feature-name/
+  [main-component]        # Entry point (matches feature name)
+  components/             # Feature-specific components
+  hooks/                  # Feature-specific hooks
+  services/              # Feature-specific services
+  utils/                 # Feature-specific utilities
+  models.ts              # Feature-specific types
+  constants.ts           # Feature-specific constants
+```
+
+## Real-World Examples
+
+### E-commerce Shop Feature
+
+<Tabs>
+  <Tab title="Next.js">
+    ```
+    app/(shop)/
+      shop/
+        page.tsx                       # Main shop page
+        _components/                   # Shop-specific components
+          product-list.tsx            # Lists all products
+          product-filter.tsx          # Filters sidebar
+          sort-dropdown.tsx           # Sort options
+          price-range-slider.tsx      # Price filter
+        _hooks/                        # Shop-specific hooks
+          use-products.ts             # Fetch and filter products
+          use-filters.ts              # Manage filter state
+        _actions/                      # Shop server actions
+          product-actions.ts          # Server-side product logic
+        _types.ts                      # Shop-specific types
+        _utils.ts                      # Shop-specific utilities
+
+      cart/
+        page.tsx                       # Cart page
+        _components/
+          cart-item.tsx               # Individual cart item
+          cart-summary.tsx            # Order summary
+          coupon-input.tsx            # Coupon code entry
+        _hooks/
+          use-cart.ts                 # Cart state management
+        _actions/
+          cart-actions.ts             # Cart server actions
+
+      wishlist/
+        page.tsx                       # Wishlist page
+        _components/
+          wishlist-item.tsx
+          wishlist-grid.tsx
+        _hooks/
+          use-wishlist.ts
+
+      _components/                     # Shared across shop routes
+        add-to-cart-button.tsx        # Used by shop & wishlist
+      _hooks/
+        use-shop-analytics.ts         # Shared analytics
+      layout.tsx                       # Shop layout
+    ```
+  </Tab>
+
+  <Tab title="Angular">
+    ```
+    features/shop/
+      products/
+        products.ts                    # Main products component
+        components/
+          product-list.ts
+          product-filter.ts
+          sort-dropdown.ts
+          price-range-slider.ts
+        services/
+          product.ts                  # Product data service
+        signals/
+          product.signal.ts           # Product state
+        models.ts                     # Product types
+
+      cart/
+        cart.ts                        # Main cart component
+        components/
+          cart-item.ts
+          cart-summary.ts
+          coupon-input.ts
+        services/
+          cart.ts                     # Cart service
+        signals/
+          cart.signal.ts              # Cart state
+
+      wishlist/
+        wishlist.ts                    # Main wishlist component
+        components/
+          wishlist-item.ts
+          wishlist-grid.ts
+        services/
+          wishlist.ts
+        signals/
+          wishlist.signal.ts
+
+      components/                      # Shared shop components
+        add-to-cart-button.ts         # Used across shop features
+      services/
+        shop-analytics.ts             # Shared shop services
+    ```
+  </Tab>
+
+  <Tab title="Astro">
+    ```
+    pages/shop/
+      products/
+        [slug].astro                   # Product detail page
+        index.astro                    # Product listing page
+      cart/
+        index.astro                    # Cart page
+      wishlist/
+        index.astro                    # Wishlist page
+
+      components/                      # Shop-specific components
+        product-list.astro            # Static product display
+        product-filter.vue            # Client island for filtering
+        add-to-cart.tsx               # Client island for cart
+        cart-item.astro               # Static cart item display
+        wishlist-item.astro           # Static wishlist item
+
+      utils/
+        shop-helpers.ts               # Shop utilities
+        price-formatting.ts
+        inventory-checks.ts
+    ```
+  </Tab>
+</Tabs>
+
+## Component Organization Within Features
+
+### Naming Conventions
+
+<Card title="Main Component Naming" icon="file">
+  The main component MUST match the feature name:
+  - Feature: `user-profile` → Component: `user-profile.tsx`
+  - Feature: `dashboard` → Component: `dashboard.tsx`
+  - Feature: `product-catalog` → Component: `product-catalog.tsx`
+</Card>
+
+This creates "Screaming Architecture" - you immediately know what the feature does.
+
+### Component Hierarchy
+
+```
+feature/
+  feature.tsx              # Container component (business logic)
+  components/
+    feature-header.tsx     # Presentational component
+    feature-content.tsx    # Presentational component
+    feature-actions.tsx    # Presentational component
+```
+
+**Container vs Presentational:**
+
+```typescript
+// dashboard/dashboard.tsx - Container
+import { useEffect } from 'react';
+import { DashboardHeader } from './components/dashboard-header';
+import { DashboardContent } from './components/dashboard-content';
+import { useDashboardData } from './hooks/use-dashboard-data';
+
+export function Dashboard() {
+  const { stats, loading, error } = useDashboardData();
+  
+  if (loading) return <LoadingState />;
+  if (error) return <ErrorState error={error} />;
+  
+  return (
+    <div>
+      <DashboardHeader title="Dashboard" />
+      <DashboardContent stats={stats} />
+    </div>
+  );
+}
+```
+
+```typescript
+// dashboard/components/dashboard-content.tsx - Presentational
+interface DashboardContentProps {
+  stats: Stats;
+}
+
+export function DashboardContent({ stats }: DashboardContentProps) {
+  return (
+    <div className="dashboard-content">
+      <StatsCard value={stats.users} label="Users" />
+      <StatsCard value={stats.revenue} label="Revenue" />
+      <StatsCard value={stats.orders} label="Orders" />
+    </div>
+  );
+}
+```
+
+## Service Layer Organization
+
+### Feature-Specific Services
+
+Services that are specific to a feature stay local:
+
+<Tabs>
+  <Tab title="Next.js">
+    ```typescript
+    // app/(shop)/shop/_actions/product-actions.ts
+    'use server';
+    import { revalidatePath } from 'next/cache';
+
+    export async function getProducts(filters?: ProductFilters) {
+      const products = await db.product.findMany({
+        where: filters,
+        orderBy: { createdAt: 'desc' },
+      });
+      
+      return products;
+    }
+
+    export async function searchProducts(query: string) {
+      const products = await db.product.findMany({
+        where: {
+          OR: [
+            { title: { contains: query, mode: 'insensitive' } },
+            { description: { contains: query, mode: 'insensitive' } },
+          ],
+        },
+      });
+      
+      return products;
+    }
+    ```
+  </Tab>
+
+  <Tab title="Angular">
+    ```typescript
+    // features/shop/products/services/product.ts
+    import { Injectable, signal, computed, inject } from '@angular/core';
+    import { HttpClient } from '@angular/common/http';
+
+    @Injectable({
+      providedIn: 'root',
+    })
+    export class ProductService {
+      private http = inject(HttpClient);
+      
+      private _products = signal<Product[]>([]);
+      readonly products = this._products.asReadonly();
+      
+      private _loading = signal(false);
+      readonly loading = this._loading.asReadonly();
+      
+      async loadProducts(filters?: ProductFilters) {
+        this._loading.set(true);
+        try {
+          const products = await this.http
+            .get<Product[]>('/api/products', { params: filters })
+            .toPromise();
+          this._products.set(products);
+        } finally {
+          this._loading.set(false);
+        }
+      }
+      
+      async searchProducts(query: string) {
+        return this.http
+          .get<Product[]>('/api/products/search', { params: { query } })
+          .toPromise();
+      }
+    }
+    ```
+  </Tab>
+
+  <Tab title="React">
+    ```typescript
+    // features/shop/services/product-service.ts
+    import { Product, ProductFilters } from '../models';
+
+    export class ProductService {
+      async getProducts(filters?: ProductFilters): Promise<Product[]> {
+        const params = new URLSearchParams();
+        if (filters) {
+          Object.entries(filters).forEach(([key, value]) => {
+            params.append(key, String(value));
+          });
+        }
+        
+        const response = await fetch(`/api/products?${params}`);
+        return response.json();
+      }
+      
+      async searchProducts(query: string): Promise<Product[]> {
+        const response = await fetch(`/api/products/search?q=${query}`);
+        return response.json();
+      }
+    }
+
+    export const productService = new ProductService();
+    ```
+  </Tab>
+</Tabs>
+
+## Hook Organization
+
+Custom hooks encapsulate feature-specific logic:
+
+```typescript
+// features/shop/hooks/use-products.ts
+import { useState, useEffect } from 'react';
+import { productService } from '../services/product-service';
+import { ProductFilters } from '../models';
+
+export function useProducts(filters?: ProductFilters) {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    setLoading(true);
+    productService
+      .getProducts(filters)
+      .then(setProducts)
+      .catch(setError)
+      .finally(() => setLoading(false));
+  }, [filters]);
+
+  return { products, loading, error };
+}
+```
+
+```typescript
+// features/shop/hooks/use-filters.ts
+import { useState, useCallback } from 'react';
+import { ProductFilters } from '../models';
+
+export function useFilters() {
+  const [filters, setFilters] = useState<ProductFilters>({});
+
+  const updateFilter = useCallback((key: string, value: any) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+  }, []);
+
+  const clearFilters = useCallback(() => {
+    setFilters({});
+  }, []);
+
+  return { filters, updateFilter, clearFilters };
+}
+```
+
+## Type Definitions
+
+Feature-specific types stay local:
+
+```typescript
+// features/shop/models.ts
+export interface Product {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  image: string;
+  category: string;
+  inStock: boolean;
+}
+
+export interface ProductFilters {
+  category?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  inStock?: boolean;
+  sortBy?: 'price' | 'title' | 'date';
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface CartItem extends Product {
+  quantity: number;
+}
+
+export interface Cart {
+  items: CartItem[];
+  total: number;
+  itemCount: number;
+}
+```
+
+## Utility Functions
+
+Feature-specific utilities:
+
+```typescript
+// features/shop/utils/price-formatting.ts
+export function formatPrice(price: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(price);
+}
+
+export function calculateDiscount(
+  price: number,
+  discountPercent: number
+): number {
+  return price * (1 - discountPercent / 100);
+}
+
+export function calculateTotal(items: CartItem[]): number {
+  return items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+}
+```
+
+## When to Extract from a Feature
+
+<CardGroup cols={2}>
+  <Card title="Keep Local" icon="folder">
+    - Used only within this feature
+    - Contains feature-specific business logic
+    - Tightly coupled to feature data models
+    - Not reusable in other contexts
+  </Card>
+  
+  <Card title="Extract to Shared" icon="share-nodes">
+    - Used by 2+ features
+    - Generic, reusable logic
+    - No feature-specific dependencies
+    - Provides value across features
+  </Card>
+</CardGroup>
+
+## Co-location Benefits
+
+### 1. Easy Navigation
+
+Everything related to a feature is in one place:
+
+```
+shop/
+  shop.tsx              ← Main component
+  components/           ← UI pieces
+  hooks/                ← State logic
+  services/             ← Data fetching
+  models.ts             ← Types
+```
+
+### 2. Feature Deletion
+
+Removing a feature is as simple as deleting its directory:
+
+```bash
+# Remove entire cart feature
+rm -rf features/cart
+```
+
+No hunting for scattered files across the codebase.
+
+### 3. Team Ownership
+
+Each feature can be owned by a different team:
+
+```
+features/
+  shop/        ← E-commerce team
+  blog/        ← Content team
+  admin/       ← Admin team
+  analytics/   ← Data team
+```
+
+Clear boundaries prevent merge conflicts and stepping on toes.
+
+### 4. Easier Refactoring
+
+Move entire features as units:
+
+```bash
+# Extract shop feature to a separate package
+mv features/shop packages/shop-feature
+```
+
+All dependencies are contained, making extraction straightforward.
+
+## Testing Structure
+
+Tests live alongside the code they test:
+
+```
+features/shop/
+  components/
+    product-list.tsx
+    product-list.test.tsx      # Component test
+  hooks/
+    use-products.ts
+    use-products.test.ts       # Hook test
+  services/
+    product-service.ts
+    product-service.test.ts    # Service test
+  __tests__/
+    shop.integration.test.tsx  # Integration test
+```
+
+## Documentation
+
+Features should have a README explaining their purpose:
+
+```markdown
+# Shop Feature
+
+## Purpose
+Handles product browsing, filtering, and adding items to cart.
+
+## Components
+- `shop.tsx` - Main shop page with product grid
+- `components/product-list.tsx` - Displays filtered products
+- `components/product-filter.tsx` - Sidebar filters
+
+## Hooks
+- `use-products.ts` - Fetches and filters products
+- `use-filters.ts` - Manages filter state
+
+## Related Features
+- Uses `ProductCard` from shared components
+- Integrates with `cart` feature for adding items
+```

@@ -1,0 +1,566 @@
+---
+title: Dashboard Application
+description: Complex dashboard architecture with data visualization, user management, and analytics
+---
+
+## Overview
+
+Dashboard applications require careful organization of data-heavy features, real-time updates, and complex UI components. This example demonstrates how to structure an admin dashboard following the Scope Rule.
+
+## Project Structure
+
+<Tabs>
+  <Tab title="Next.js">
+    ```
+    src/
+      app/
+        (dashboard)/                   # Dashboard feature group
+          dashboard/
+            page.tsx                   # /dashboard route
+            loading.tsx                # Loading state
+            error.tsx                  # Error boundary
+            _components/               # Dashboard-specific
+              stats-card.tsx
+              dashboard-grid.tsx
+              recent-activity.tsx
+              quick-actions.tsx
+
+          analytics/
+            page.tsx                   # /analytics route
+            _components/               # Analytics-specific
+              chart-container.tsx
+              metrics-table.tsx
+              date-range-picker.tsx
+              export-button.tsx
+
+          users/
+            page.tsx                   # /users listing
+            [id]/
+              page.tsx                 # /users/[id] detail
+            _components/               # Users-specific
+              user-table.tsx
+              user-form.tsx
+              user-avatar.tsx
+              role-selector.tsx
+
+          settings/
+            page.tsx                   # /settings route
+            profile/
+              page.tsx                 # /settings/profile
+            security/
+              page.tsx                 # /settings/security
+            _components/               # Settings-specific
+              settings-form.tsx
+              password-change.tsx
+              notification-prefs.tsx
+
+          reports/
+            page.tsx                   # /reports listing
+            [id]/
+              page.tsx                 # /reports/[id]
+            _components/               # Reports-specific
+              report-builder.tsx
+              report-preview.tsx
+              filter-panel.tsx
+
+          _components/                 # Shared dashboard components
+            sidebar-nav.tsx          # Used across all dashboard pages
+            breadcrumbs.tsx          # Used across all dashboard pages
+            page-header.tsx          # Used across all dashboard pages
+          _hooks/
+            use-dashboard.ts
+            use-realtime.ts
+          _actions/
+            dashboard-actions.ts
+          layout.tsx                   # Dashboard layout
+
+        (auth)/
+          login/
+            page.tsx
+          layout.tsx
+
+      shared/                          # ONLY for 2+ route groups
+        components/
+          ui/
+            button.tsx
+            card.tsx
+            input.tsx
+            select.tsx
+            modal.tsx
+            table.tsx
+          charts/                      # Used in analytics & reports
+            line-chart.tsx
+            bar-chart.tsx
+            pie-chart.tsx
+          data-table/                  # Used in users & reports
+            data-table.tsx
+            column-header.tsx
+            pagination.tsx
+        hooks/
+          use-debounce.ts
+          use-local-storage.ts
+          use-media-query.ts
+
+      lib/
+        auth.ts
+        db.ts
+        websocket.ts
+        utils.ts
+        chart-utils.ts
+    ```
+  </Tab>
+
+  <Tab title="Angular">
+    ```
+    src/
+      app/
+        features/
+          dashboard/
+            dashboard.ts               # Main dashboard component
+            components/
+              stats-card.ts
+              dashboard-grid.ts
+              recent-activity.ts
+              quick-actions.ts
+            services/
+              dashboard.ts
+            signals/
+              dashboard.signal.ts
+
+          analytics/
+            analytics.ts               # Main analytics component
+            components/
+              chart-container.ts
+              metrics-table.ts
+              date-range-picker.ts
+              export-button.ts
+            services/
+              analytics.ts
+            signals/
+              analytics.signal.ts
+
+          users/
+            users.ts                   # User listing component
+            user-detail/
+              user-detail.ts           # User detail component
+              components/
+                user-info.ts
+                user-activity.ts
+            components/
+              user-table.ts
+              user-form.ts
+              user-avatar.ts
+              role-selector.ts
+            services/
+              user.ts
+            signals/
+              users.signal.ts
+
+          settings/
+            settings.ts                # Main settings component
+            profile/
+              profile.ts
+              components/
+                profile-form.ts
+            security/
+              security.ts
+              components/
+                password-change.ts
+            components/
+              settings-form.ts
+              notification-prefs.ts
+
+          reports/
+            reports.ts                 # Reports listing
+            report-detail/
+              report-detail.ts
+            components/
+              report-builder.ts
+              report-preview.ts
+              filter-panel.ts
+            services/
+              reports.ts
+
+          shared/                      # ONLY for 2+ features
+            components/
+              sidebar-nav.ts           # Used across dashboard
+              breadcrumbs.ts
+              page-header.ts
+              line-chart.ts            # Used in analytics & reports
+              bar-chart.ts
+              pie-chart.ts
+              data-table.ts            # Used in users & reports
+            pipes/
+              date-format.ts
+              number-format.ts
+            directives/
+              tooltip.ts
+              loading.ts
+
+        core/
+          services/
+            api.ts
+            auth.ts
+            websocket.ts
+          guards/
+            auth.guard.ts
+            role.guard.ts
+          interceptors/
+            auth.interceptor.ts
+
+        app.ts
+        routes.ts
+    ```
+  </Tab>
+
+  <Tab title="React">
+    ```
+    src/
+      features/
+        dashboard/
+          dashboard.tsx                # Main container
+          components/
+            stats-card.tsx
+            dashboard-grid.tsx
+            recent-activity.tsx
+            quick-actions.tsx
+          hooks/
+            use-dashboard-data.ts
+          services/
+            dashboard-service.ts
+
+        analytics/
+          analytics.tsx                # Main container
+          components/
+            chart-container.tsx
+            metrics-table.tsx
+            date-range-picker.tsx
+            export-button.tsx
+          hooks/
+            use-analytics-data.ts
+          services/
+            analytics-service.ts
+
+        users/
+          users.tsx                    # User listing container
+          user-detail.tsx              # User detail container
+          components/
+            user-table.tsx
+            user-form.tsx
+            user-avatar.tsx
+            role-selector.tsx
+          hooks/
+            use-users.ts
+          services/
+            user-service.ts
+
+        settings/
+          settings.tsx                 # Main container
+          profile.tsx
+          security.tsx
+          components/
+            settings-form.tsx
+            password-change.tsx
+            notification-prefs.tsx
+          hooks/
+            use-settings.ts
+
+        reports/
+          reports.tsx                  # Reports listing
+          report-detail.tsx            # Report detail
+          components/
+            report-builder.tsx
+            report-preview.tsx
+            filter-panel.tsx
+          hooks/
+            use-reports.ts
+
+      shared/                          # ONLY for 2+ features
+        components/
+          layout/
+            sidebar-nav.tsx            # Used across dashboard
+            breadcrumbs.tsx
+            page-header.tsx
+          charts/
+            line-chart.tsx             # Used in analytics & reports
+            bar-chart.tsx
+            pie-chart.tsx
+          data-table/
+            data-table.tsx             # Used in users & reports
+            column-header.tsx
+            pagination.tsx
+          ui/
+            button.tsx
+            card.tsx
+            modal.tsx
+        hooks/
+          use-debounce.ts
+          use-websocket.ts
+
+      infrastructure/
+        api/
+          client.ts
+        auth/
+          auth-service.ts
+    ```
+  </Tab>
+</Tabs>
+
+## Key Architectural Decisions
+
+### Sidebar Navigation
+
+**Usage:** Dashboard, Analytics, Users, Settings, Reports (5+ pages)
+
+**Decision:** Shared within dashboard feature group
+
+**Reasoning:** Used by all dashboard pages. In Next.js, it goes in `(dashboard)/_components/`. In Angular/React, it goes in `shared/components/`.
+
+### Chart Components
+
+**Usage:** Analytics feature, Reports feature (2 features)
+
+**Decision:** Shared components
+
+**Reasoning:** Crosses feature boundaries. Both analytics and reports need visualization components.
+
+### User Avatar
+
+**Usage:** Users feature only
+
+**Decision:** Local to users feature
+
+**Reasoning:** Specific to user management. Even if it appears in multiple places within user management, it stays local.
+
+### Data Table
+
+**Usage:** Users feature, Reports feature (2 features)
+
+**Decision:** Shared component
+
+**Reasoning:** Generic table component used across multiple features. Perfect candidate for shared.
+
+### Stats Card
+
+**Usage:** Dashboard page only
+
+**Decision:** Local to dashboard feature
+
+**Reasoning:** Specific to the main dashboard view. Doesn't need to be shared.
+
+## Real-time Updates Pattern
+
+Dashboards often need real-time data. Here's how to structure WebSocket integration:
+
+```typescript
+// lib/websocket.ts (shared infrastructure)
+import { useEffect, useState } from 'react';
+
+export function useWebSocket(url: string) {
+  const [data, setData] = useState(null);
+  const [isConnected, setIsConnected] = useState(false);
+
+  useEffect(() => {
+    const ws = new WebSocket(url);
+    
+    ws.onopen = () => setIsConnected(true);
+    ws.onmessage = (event) => setData(JSON.parse(event.data));
+    ws.onclose = () => setIsConnected(false);
+
+    return () => ws.close();
+  }, [url]);
+
+  return { data, isConnected };
+}
+```
+
+```typescript
+// features/dashboard/hooks/use-dashboard-data.ts (feature-specific)
+import { useWebSocket } from '@/lib/websocket';
+
+export function useDashboardData() {
+  const { data, isConnected } = useWebSocket('/api/dashboard/stream');
+  
+  return {
+    stats: data?.stats,
+    recentActivity: data?.activity,
+    isConnected,
+  };
+}
+```
+
+## State Management Patterns
+
+<CardGroup cols={2}>
+  <Card title="Server State" icon="server">
+    Use Server Components (Next.js) or signals (Angular) for data fetching and server state management.
+  </Card>
+  
+  <Card title="Client State" icon="browser">
+    Keep UI state local to components. Use context or stores only for truly global state.
+  </Card>
+  
+  <Card title="Real-time State" icon="wifi">
+    WebSocket connections managed at the feature level with shared infrastructure.
+  </Card>
+  
+  <Card title="Form State" icon="input">
+    Form state stays local to the form component. Use controlled components or form libraries.
+  </Card>
+</CardGroup>
+
+## Data Visualization Structure
+
+Chart components are used by multiple features (analytics and reports), so they're shared:
+
+```typescript
+// shared/components/charts/line-chart.tsx
+import { Line } from 'react-chartjs-2';
+
+interface LineChartProps {
+  data: ChartData;
+  options?: ChartOptions;
+}
+
+export function LineChart({ data, options }: LineChartProps) {
+  return <Line data={data} options={options} />;
+}
+```
+
+But chart configurations are feature-specific:
+
+```typescript
+// features/analytics/components/chart-container.tsx
+import { LineChart } from '@/shared/components/charts/line-chart';
+import { useAnalyticsData } from '../hooks/use-analytics-data';
+
+export function ChartContainer() {
+  const { chartData } = useAnalyticsData();
+  
+  // Analytics-specific chart configuration
+  const options = {
+    responsive: true,
+    plugins: {
+      legend: { display: true },
+      tooltip: { mode: 'index' },
+    },
+  };
+  
+  return <LineChart data={chartData} options={options} />;
+}
+```
+
+## Layout Composition
+
+Dashboard applications typically have nested layouts:
+
+```typescript
+// app/(dashboard)/layout.tsx (Next.js)
+import { SidebarNav } from './_components/sidebar-nav';
+import { Breadcrumbs } from './_components/breadcrumbs';
+
+export default function DashboardLayout({ children }) {
+  return (
+    <div className="dashboard-layout">
+      <SidebarNav />
+      <main>
+        <Breadcrumbs />
+        {children}
+      </main>
+    </div>
+  );
+}
+```
+
+These layout components (SidebarNav, Breadcrumbs) are shared within the dashboard feature group because they're used by all dashboard pages.
+
+## Permission-Based UI
+
+Role-based access control stays in core/infrastructure:
+
+```typescript
+// lib/auth.ts
+export function hasPermission(user: User, permission: string): boolean {
+  return user.permissions.includes(permission);
+}
+
+export function requireRole(requiredRole: string) {
+  // Middleware or guard logic
+}
+```
+
+Used in features:
+
+```typescript
+// features/users/components/user-form.tsx
+import { hasPermission } from '@/lib/auth';
+import { useUser } from '@/lib/auth';
+
+export function UserForm() {
+  const { user } = useUser();
+  const canEditRoles = hasPermission(user, 'users.edit.roles');
+  
+  return (
+    <form>
+      {/* Form fields */}
+      {canEditRoles && <RoleSelector />}
+    </form>
+  );
+}
+```
+
+## Performance Considerations
+
+### Data Table Virtualization
+
+For large datasets, implement virtualization in the shared data table:
+
+```typescript
+// shared/components/data-table/data-table.tsx
+import { useVirtualizer } from '@tanstack/react-virtual';
+
+export function DataTable({ data, columns }) {
+  const parentRef = useRef(null);
+  
+  const virtualizer = useVirtualizer({
+    count: data.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 50,
+  });
+  
+  return (
+    <div ref={parentRef} className="table-container">
+      {virtualizer.getVirtualItems().map((virtualRow) => (
+        <TableRow key={virtualRow.index} data={data[virtualRow.index]} />
+      ))}
+    </div>
+  );
+}
+```
+
+### Chart Performance
+
+Memo-ize expensive chart calculations in feature-specific hooks:
+
+```typescript
+// features/analytics/hooks/use-analytics-data.ts
+import { useMemo } from 'react';
+
+export function useAnalyticsData() {
+  const rawData = useRawData();
+  
+  const chartData = useMemo(() => {
+    // Expensive data transformation
+    return transformDataForChart(rawData);
+  }, [rawData]);
+  
+  return { chartData };
+}
+```
+
+## Testing Strategy
+
+- **Shared components** - Unit test thoroughly since they're used everywhere
+- **Feature components** - Test in isolation with mocked dependencies
+- **Integration tests** - Test feature flows end-to-end
+- **E2E tests** - Test critical user journeys across features

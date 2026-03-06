@@ -1,0 +1,116 @@
+---
+title: Introduction
+description: Claude Code agents that enforce the Scope Rule architectural pattern for Angular, Next.js, Astro, and React projects
+---
+
+<img
+  className="block"
+  src="https://media.brand.dev/288cc7c4-5cef-4376-950b-bdf0083eedae.png"
+  alt="Scope Rule Architects"
+  style={{ maxWidth: '200px', margin: '0 auto 2rem' }}
+/>
+
+# Welcome to Scope Rule Architects
+
+A collection of specialized Claude Code agents that enforce the **Scope Rule** architectural pattern across different frontend frameworks. These agents help developers make consistent architectural decisions and maintain clean, scalable codebases.
+
+## What is the Scope Rule?
+
+The Scope Rule is a fundamental architectural principle that determines code placement based on usage scope:
+
+**"Scope determines structure"**
+
+<CardGroup cols={2}>
+  <Card title="2+ Features" icon="share-nodes" color="#94cb04">
+    Code used by multiple features **MUST** go in global/shared directories
+  </Card>
+  <Card title="1 Feature" icon="folder" color="#545454">
+    Code used by a single feature **MUST** stay local in that feature
+  </Card>
+</CardGroup>
+
+<Note>
+  This rule is **absolute and non-negotiable** — no exceptions.
+</Note>
+
+## Why Scope Rule Architects?
+
+<CardGroup cols={2}>
+  <Card title="Perfect Traceability" icon="magnifying-glass">
+    Know exactly where to find code in your project
+  </Card>
+  <Card title="Screaming Architecture" icon="megaphone">
+    Structure immediately communicates functionality
+  </Card>
+  <Card title="Scalable Organization" icon="chart-line">
+    Grows naturally with your application
+  </Card>
+  <Card title="Zero Architectural Debt" icon="check-circle">
+    Prevents the "everything in components/" anti-pattern
+  </Card>
+</CardGroup>
+
+## Available Agents
+
+<CardGroup cols={2}>
+  <Card title="Angular Agent" icon="angular" href="/agents/angular">
+    Angular 20+ with standalone components and signals
+  </Card>
+  <Card title="Next.js Agent" icon="react" href="/agents/nextjs">
+    Next.js 15+ with App Router and Server Components
+  </Card>
+  <Card title="Astro Agent" icon="rocket" href="/agents/astro">
+    Astro 5+ with Islands Architecture
+  </Card>
+  <Card title="React Agent" icon="react" href="/agents/react">
+    React 19+ with modern patterns
+  </Card>
+</CardGroup>
+
+## Battle-Tested Patterns
+
+These agents are built on real-world architectural patterns used daily by:
+
+- **Google Developer Expert** in Angular
+- **Microsoft MVP**
+- **Gentleman Programming** Community Leader
+
+The patterns have been refined through production applications and community feedback.
+
+## Quick Example
+
+<Tabs>
+  <Tab title="Question">
+    ```
+    I have a ProductCard component used in shop, cart, and wishlist pages.
+    Where should I place it?
+    ```
+  </Tab>
+  <Tab title="Answer">
+    ```
+    Used by 3 features (shop, cart, wishlist) → 2+ features
+    
+    ✅ MUST place in: shared/components/ProductCard
+    
+    Reasoning: The Scope Rule dictates that any code used by 2 or more 
+    features must be placed in global/shared directories. This ensures 
+    perfect traceability and prevents duplication.
+    ```
+  </Tab>
+</Tabs>
+
+## Get Started
+
+Ready to improve your project architecture? Choose your path:
+
+<CardGroup cols={3}>
+  <Card title="Installation" icon="download" href="/installation">
+    Install the agents in Claude Code
+  </Card>
+  <Card title="Quickstart" icon="bolt" href="/quickstart">
+    Start making architectural decisions
+  </Card>
+  <Card title="Core Concepts" icon="book" href="/concepts/scope-rule">
+    Deep dive into the principles
+  </Card>
+</CardGroup>

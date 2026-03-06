@@ -1,0 +1,359 @@
+---
+title: 'Angular Scope Rule Architect'
+description: 'Architectural agent for Angular 20+ projects using standalone components, signals, and the Scope Rule pattern'
+icon: 'angular'
+---
+
+## Overview
+
+The Angular Scope Rule Architect is a specialized agent for making architectural decisions in Angular/TypeScript projects. It enforces the **Scope Rule pattern** and **Screaming Architecture principles** while leveraging Angular 20+ modern features including standalone components, signals, and native control flow.
+
+<Note>
+  **Target Framework:** Angular 20+ with standalone components, TypeScript, Vitest, ESLint, Prettier, and Husky
+</Note>
+
+## When to Use This Agent
+
+Invoke the Angular Scope Rule Architect when you need to:
+
+<CardGroup cols={2}>
+  <Card title="New Project Setup" icon="plus">
+    Setting up a new Angular project with proper architecture, modern tooling, and the Scope Rule pattern
+  </Card>
+  <Card title="Component Placement" icon="folder-tree">
+    Determining where to place components based on usage patterns (local vs shared)
+  </Card>
+  <Card title="Architecture Refactoring" icon="arrows-rotate">
+    Restructuring existing codebases to follow standalone components and Scope Rule principles
+  </Card>
+  <Card title="NgModule Migration" icon="code-branch">
+    Converting legacy NgModule-based applications to standalone component architecture
+  </Card>
+</CardGroup>
+
+### Example Scenarios
+
+```typescript
+// Scenario 1: New Project Setup
+user: "I need to set up a new e-commerce project with shopping cart and user authentication features"
+assistant: "I'll use the scope-rule-architect-angular agent to set up the project structure"
+
+// Scenario 2: Component Placement
+user: "I have a Button component used in both shopping cart and user profile. Where should I put it?"
+assistant: "Let me use the scope-rule-architect-angular agent to determine the correct placement"
+// Result: 2+ features = shared/components
+
+// Scenario 3: Modernization
+user: "My components are all using NgModules. How should I restructure this?"
+assistant: "I'll invoke the scope-rule-architect-angular agent to restructure with standalone components"
+```
+
+## Core Angular 20 Principles
+
+### 1. Standalone Components First
+
+- **ALL components MUST be standalone** - Angular 20 uses standalone by default
+- No `standalone: true` flag needed (it's implicit)
+- Use `input()` and `output()` functions instead of decorators
+- Implement `ChangeDetectionStrategy.OnPush` for all components
+- Avoid constructors - use `inject()` for dependency injection
+- Never use `any` types
+- Avoid lifecycle hooks like `ngOnInit` - use signals and computed instead
+- Leverage signals with `signal()`, `computed()`, and `effect()`
+
+### 2. Modern Template Syntax
+
+<CodeGroup>
+```html Control Flow
+<!-- Modern: Use @if, @for, @switch -->
+@if (isLoading()) {
+  <div>Loading...</div>
+} @else {
+  @for (item of items(); track item.id) {
+    <div>{{ item.name }}</div>
+  }
+}
+```
+
+```html Styling
+<!-- Use class/style bindings over ngClass/ngStyle -->
+<div [class.active]="isActive()" [style.color]="textColor()"></div>
+```
+
+```html Images
+<!-- Use NgOptimizedImage for all static images -->
+<img ngSrc="/assets/hero.jpg" width="800" height="600" priority>
+```
+</CodeGroup>
+
+<Note>
+  **Naming Convention:** No need for `.component`, `.service`, `.module` suffixes. The filename should describe the behavior directly.
+</Note>
+
+### 3. The Scope Rule
+
+<Warning>
+  **This rule is absolute and non-negotiable:**
+  - Code used by **2+ features** → MUST go in **global/shared** directories
+  - Code used by **1 feature** → MUST stay **local** in that feature
+  - **NO EXCEPTIONS**
+</Warning>
+
+### 4. Screaming Architecture
+
+Your project structure must IMMEDIATELY communicate what the application does:
+
+- Feature names describe **business functionality**, not technical implementation
+- Directory structure tells the story at first glance
+- Main feature components have the **same name as their feature**
+
+## Project Structure
+
+Here's the standard Angular 20 project structure following the Scope Rule:
+
+```plaintext
+src/
+  app/
+    features/
+      [feature-name]/
+        [feature-name].ts              # Main standalone component
+        components/                    # Feature-specific components
+          [component-name].ts
+        services/                      # Feature-specific services with inject()
+          [service-name].ts
+        guards/                        # Feature-specific guards
+        models/                        # Feature-specific interfaces/types
+        signals/                       # Feature-specific signal stores
+      
+      shared/                          # ONLY for 2+ feature usage
+        components/                    # Shared standalone components
+        services/                      # Shared services
+        guards/                        # Shared guards
+        pipes/                         # Shared pipes
+        directives/                    # Shared directives
+        signals/                       # Global signal stores
+      
+      core/                            # Singleton services and app-wide concerns
+        services/
+          auth.ts
+          api.ts
+        interceptors/
+        guards/
+    
+    main.ts                            # Bootstrap with standalone component
+    app.config.ts                      # App configuration
+    app.ts                             # Root standalone component
+    routes.ts                          # Route configuration
+```
+
+### Path Aliases Configuration
+
+Configure clean imports in `tsconfig.json`:
+
+```json tsconfig.json
+{
+  "paths": {
+    "@features/*": ["src/app/features/*"],
+    "@shared/*": ["src/app/features/shared/*"],
+    "@core/*": ["src/app/core/*"]
+  }
+}
+```
+
+## Component Templates
+
+### Standalone Component Pattern
+
+```typescript feature-name.ts
+import {
+  Component,
+  ChangeDetectionStrategy,
+  signal,
+  computed,
+  input,
+  output,
+} from "@angular/core";
+
+@Component({
+  selector: "app-feature-name",
+  imports: [
+    /* required dependencies */
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    @if (isLoading()) {
+      <div>Loading...</div>
+    } @else {
+      @for (item of items(); track item.id) {
+        <div>{{ item.name }}</div>
+      }
+    }
+  `,
+})
+export class FeatureNameComponent {
+  // Use input() function instead of @Input()
+  readonly data = input<DataType>();
+  readonly config = input({ required: true });
+
+  // Use output() function instead of @Output()
+  readonly itemSelected = output<ItemType>();
+
+  // Use signals for state
+  private readonly loading = signal(false);
+  readonly isLoading = this.loading.asReadonly();
+
+  // Use computed for derived state
+  readonly items = computed(
+    () => this.data()?.filter((item) => item.active) ?? [],
+  );
+
+  // Use inject() instead of constructor injection
+  private readonly service = inject(FeatureService);
+}
+```
+
+### Service with Signals
+
+```typescript feature.service.ts
+import { Injectable, signal, computed, inject } from "@angular/core";
+
+@Injectable({
+  providedIn: "root",
+})
+export class FeatureService {
+  private readonly http = inject(HttpClient);
+
+  // Private signals for internal state
+  private readonly _state = signal<FeatureState>({
+    items: [],
+    loading: false,
+    error: null,
+  });
+
+  // Public readonly computed values
+  readonly items = computed(() => this._state().items);
+  readonly loading = computed(() => this._state().loading);
+  readonly error = computed(() => this._state().error);
+
+  loadItems(): void {
+    this._state.update((state) => ({ ...state, loading: true }));
+    // Implementation
+  }
+}
+```
+
+## Decision Framework
+
+The agent follows this systematic approach when analyzing component placement:
+
+1. **Consult Angular MCP**: Use `mcp__angular-cli__search_documentation` for guidance
+2. **Count usage**: Identify exactly how many features use the component
+3. **Apply the rule**: 1 feature = local, 2+ features = shared/global
+4. **Validate best practices**: Use `mcp__angular-cli__get_best_practices`
+5. **Document decision**: Explain WHY with Angular context
+
+## MCP Integration
+
+The agent leverages Angular MCP tools for architectural validation:
+
+### Mandatory MCP Usage Scenarios
+
+<CardGroup cols={2}>
+  <Card title="New Project Setup" icon="wrench">
+    Consult MCP for current Angular CLI commands and project structure
+  </Card>
+  <Card title="Component Architecture" icon="cube">
+    Verify standalone component patterns and signal usage
+  </Card>
+  <Card title="Migration Planning" icon="map">
+    Research migration paths from NgModules to standalone components
+  </Card>
+  <Card title="Performance Optimization" icon="gauge-high">
+    Look up current Angular performance best practices
+  </Card>
+</CardGroup>
+
+### Example MCP Workflow
+
+```plaintext
+1. User asks about component placement
+2. Execute: mcp__angular-cli__get_best_practices
+3. Execute: mcp__angular-cli__search_documentation with relevant query
+4. Apply Scope Rule with Angular-specific context
+5. Provide decision with MCP-validated reasoning
+```
+
+### MCP Query Templates
+
+```typescript
+// Architecture queries
+"standalone components architecture patterns"
+
+// State management
+"signals state management best practices"
+
+// Testing
+"testing standalone components"
+
+// Performance
+"Angular performance optimization"
+
+// Migration
+"NgModule to standalone migration"
+```
+
+## Quality Checks
+
+Before finalizing any architectural decision, the agent verifies:
+
+1. **Scope verification**: Feature usage correctly counted?
+2. **Angular compliance**: Using standalone components and modern patterns?
+3. **MCP validation**: Consulted Angular MCP tools for best practices?
+4. **Naming validation**: Component names match feature names?
+5. **Screaming test**: New developers understand app structure?
+6. **Signal usage**: Leveraging signals appropriately?
+7. **Future-proofing**: Structure scales with Angular's evolution?
+
+## Angular-Specific Edge Cases
+
+<AccordionGroup>
+  <Accordion title="Legacy NgModule Migration">
+    Always convert to standalone components during restructuring. Use Angular CLI schematics when available.
+  </Accordion>
+  
+  <Accordion title="Lazy Loading">
+    Use standalone component routes instead of module-based lazy loading:
+    ```typescript
+    {
+      path: 'feature',
+      loadComponent: () => import('./features/feature/feature').then(m => m.FeatureComponent)
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Signal Stores">
+    Place feature-specific signals locally, shared signals globally in `shared/signals/`
+  </Accordion>
+  
+  <Accordion title="Service Scope">
+    Use `providedIn: 'root'` for shared services, local provision for feature-specific services
+  </Accordion>
+  
+  <Accordion title="Form Handling">
+    Implement reactive forms with signals for state management. Use typed reactive forms.
+  </Accordion>
+</AccordionGroup>
+
+## Communication Style
+
+The agent is direct and authoritative about Angular architectural decisions:
+
+- States placement decisions with confidence and clear Angular reasoning
+- Never compromises on the Scope Rule or Angular best practices
+- Provides concrete Angular code examples
+- Challenges outdated patterns (NgModules, `@Input`/`@Output` decorators)
+- Explains long-term benefits of standalone components and signals
+
+<Note>
+  The agent acts as the **guardian of clean, scalable Angular architecture**, ensuring every decision results in a codebase that leverages Angular 20+ features optimally, follows the Scope Rule religiously, and is immediately understandable through Screaming Architecture principles.
+</Note>

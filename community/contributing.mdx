@@ -1,0 +1,193 @@
+---
+title: 'Contributing'
+description: 'How to contribute to the Scope Rule Architects project'
+icon: 'code-pull-request'
+---
+
+We welcome contributions from the community! Whether you're fixing bugs, creating new framework agents, improving documentation, or adding architectural patterns, your help is appreciated.
+
+## Ways to Contribute
+
+There are several ways you can contribute to the Scope Rule Architects project:
+
+### Report Bugs
+
+Found a bug in an existing agent? Please open an issue on our [GitHub repository](https://github.com/alanbuscaglia/claude-agents) with:
+
+- A clear description of the problem
+- Steps to reproduce the issue
+- Expected vs. actual behavior
+- The framework agent you're using (Angular, Next.js, Astro, etc.)
+- Your environment details (Claude Code version, OS, etc.)
+
+### Create New Framework Agents
+
+We're actively looking for contributors to help build agents for additional frameworks. Each agent should enforce the Scope Rule while respecting framework-specific best practices.
+
+<Note>
+See our [priority framework requests](#priority-frameworks) below for the most requested agents.
+</Note>
+
+### Improve Documentation
+
+Documentation improvements are always welcome, including:
+
+- Fixing typos or clarifying explanations
+- Adding examples and use cases
+- Translating content to other languages
+- Creating tutorials or guides
+
+### Add Architectural Patterns
+
+Share your experience by contributing:
+
+- New architectural patterns that follow the Scope Rule
+- Best practices for specific scenarios
+- Edge case handling strategies
+- Integration patterns with other tools
+
+## Priority Frameworks
+
+We're especially interested in agents for these frameworks:
+
+<CardGroup cols={2}>
+  <Card title="Vue.js with Nuxt" icon="vuejs">
+    Modern Vue 3 composition API with Nuxt 3+ framework support
+  </Card>
+  <Card title="SvelteKit" icon="code">
+    SvelteKit with modern reactive patterns and file-based routing
+  </Card>
+  <Card title="Solid.js with SolidStart" icon="layer-group">
+    Fine-grained reactivity with SolidStart meta-framework
+  </Card>
+  <Card title="Remix" icon="react">
+    Full-stack React framework with nested routing
+  </Card>
+</CardGroup>
+
+## Contribution Process
+
+<Steps>
+  <Step title="Fork the Repository">
+    Fork the [claude-agents repository](https://github.com/alanbuscaglia/claude-agents) to your GitHub account.
+  </Step>
+  
+  <Step title="Clone Your Fork">
+    ```bash
+    git clone https://github.com/YOUR_USERNAME/claude-agents.git
+    cd claude-agents
+    ```
+  </Step>
+  
+  <Step title="Create a Branch">
+    Create a descriptive branch name for your contribution:
+    ```bash
+    git checkout -b feature/vue-agent
+    # or
+    git checkout -b fix/angular-agent-bug
+    # or
+    git checkout -b docs/improve-readme
+    ```
+  </Step>
+  
+  <Step title="Make Your Changes">
+    Implement your contribution following the project's patterns:
+    - For new agents, use existing agents as templates
+    - Ensure the Scope Rule is enforced correctly
+    - Include framework-specific best practices
+    - Add clear examples in the agent description
+  </Step>
+  
+  <Step title="Test Your Changes">
+    Before submitting:
+    - Test the agent with Claude Code
+    - Verify architectural decisions are correct
+    - Ensure compatibility with the target framework's latest version
+    - Check that examples work as expected
+  </Step>
+  
+  <Step title="Commit Your Changes">
+    Write clear, descriptive commit messages:
+    ```bash
+    git add .
+    git commit -m "feat: add Vue.js/Nuxt Scope Rule agent"
+    # or
+    git commit -m "fix: correct Angular agent signal handling"
+    # or
+    git commit -m "docs: improve contributing guidelines"
+    ```
+  </Step>
+  
+  <Step title="Push to Your Fork">
+    ```bash
+    git push origin feature/vue-agent
+    ```
+  </Step>
+  
+  <Step title="Open a Pull Request">
+    Go to the original repository and open a pull request:
+    - Provide a clear title and description
+    - Explain what changes you made and why
+    - Reference any related issues
+    - Include screenshots or examples if applicable
+  </Step>
+</Steps>
+
+## Agent Development Guidelines
+
+When creating a new framework agent:
+
+### Core Requirements
+
+- **Enforce the Scope Rule**: The agent MUST strictly enforce "scope determines structure"
+- **Framework expertise**: Include framework-specific best practices and modern patterns
+- **MCP integration**: Integrate with relevant MCP servers when available
+- **Clear examples**: Provide concrete examples in the agent metadata
+- **Screaming architecture**: Ensure the agent promotes self-documenting project structures
+
+### Agent Structure
+
+Each agent should include:
+
+1. **Clear name**: `scope-rule-architect-[framework]`
+2. **Detailed description**: When to use the agent and what it specializes in
+3. **Examples**: At least 3 usage examples in the metadata
+4. **Core principles**: Framework-specific implementation of the Scope Rule
+5. **Decision framework**: Clear steps for making architectural decisions
+6. **Quality checks**: Validation steps the agent performs
+7. **Edge cases**: Framework-specific considerations
+
+### Code Style
+
+- Use the framework's latest stable version
+- Follow the framework's official style guide
+- Include TypeScript types where applicable
+- Provide code examples that demonstrate best practices
+
+## Code of Conduct
+
+We are committed to providing a welcoming and inclusive environment. When contributing:
+
+- Be respectful and considerate in all interactions
+- Welcome newcomers and help them get started
+- Focus on constructive feedback
+- Respect different viewpoints and experiences
+- Gracefully accept constructive criticism
+
+## Questions?
+
+If you have questions about contributing:
+
+- Open a [GitHub Discussion](https://github.com/alanbuscaglia/claude-agents/discussions)
+- Check the [FAQ](/community/faq) for common questions
+- Review existing pull requests for examples
+
+We appreciate your contributions to making the Scope Rule Architects project better for everyone!
+
+## About the Project
+
+This project was created by **Alan Buscaglia**, a Google Developer Expert in Angular and Microsoft MVP, based on battle-tested architectural patterns used in production applications. Contributions help refine these patterns and extend them to more frameworks.
+
+<Info>
+All contributions are licensed under the MIT License. By contributing, you agree that your contributions will be licensed under the same terms.
+</Info>

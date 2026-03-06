@@ -1,0 +1,495 @@
+---
+title: 'React Scope Rule Architect'
+description: 'Architectural agent for React 19+ projects using TypeScript and the Scope Rule pattern'
+icon: 'react'
+---
+
+## Overview
+
+The React Scope Rule Architect is a specialized agent for making architectural decisions in React/TypeScript projects. It enforces the **Scope Rule pattern** and **Screaming Architecture principles** to create project structures that immediately communicate functionality and maintain strict component placement rules.
+
+<Note>
+  **Target Framework:** React 19+ with TypeScript, Vitest for testing, ESLint, Prettier, and Husky
+</Note>
+
+## When to Use This Agent
+
+Invoke the React Scope Rule Architect when you need to:
+
+<CardGroup cols={2}>
+  <Card title="New Project Setup" icon="plus">
+    Setting up a new React project with proper architecture and the Scope Rule pattern
+  </Card>
+  <Card title="Component Placement" icon="folder-tree">
+    Determining where to place components based on usage patterns (local vs shared)
+  </Card>
+  <Card title="Architecture Refactoring" icon="arrows-rotate">
+    Restructuring existing codebases to follow Scope Rule and Screaming Architecture principles
+  </Card>
+  <Card title="Code Review" icon="magnifying-glass">
+    Identifying violations of the Scope Rule and providing refactoring guidance
+  </Card>
+</CardGroup>
+
+### Example Scenarios
+
+```typescript
+// Scenario 1: New Project Setup
+user: "I need to set up a new e-commerce project with shopping cart and user authentication features"
+assistant: "I'll use the scope-rule-architect agent to set up the project structure"
+
+// Scenario 2: Component Placement
+user: "I have a Button component used in both shopping cart and user profile. Where should I put it?"
+assistant: "Let me use the scope-rule-architect agent to determine the correct placement"
+// Result: 2+ features = shared/components
+
+// Scenario 3: Restructuring
+user: "My components are all in a single components folder. How should I restructure this?"
+assistant: "I'll invoke the scope-rule-architect agent to analyze and restructure your project"
+```
+
+## Core Principles
+
+### 1. The Scope Rule - The Unbreakable Law
+
+<Warning>
+  **"Scope determines structure" - This rule is absolute and non-negotiable:**
+  - Code used by **2+ features** → MUST go in **global/shared** directories
+  - Code used by **1 feature** → MUST stay **local** in that feature
+  - **NO EXCEPTIONS**
+</Warning>
+
+The Scope Rule is the foundation of clean architecture. It prevents premature abstraction and ensures that code is organized based on actual usage, not hypothetical future needs.
+
+### 2. Screaming Architecture
+
+Your project structure must IMMEDIATELY communicate what the application does:
+
+- **Feature names** describe **business functionality**, not technical implementation
+- **Directory structure** tells the story of what the app does at first glance
+- **Container components** MUST have the same name as their feature
+
+<Note>
+  A new developer should understand what your application does by looking at the folder structure alone, without reading any code.
+</Note>
+
+### 3. Container/Presentational Pattern
+
+- **Containers**: Handle business logic, state management, and data fetching
+- **Presentational**: Pure UI components that receive props
+- **The main container MUST match the feature name exactly**
+
+This separation ensures clear responsibilities and makes components easier to test and maintain.
+
+## Project Structure
+
+Here's the standard React project structure following the Scope Rule:
+
+```plaintext
+src/
+  features/
+    shopping-cart/
+      shopping-cart.tsx              # Main container (matches feature name)
+      components/                    # Feature-specific components
+        cart-item.tsx
+        cart-summary.tsx
+        checkout-button.tsx
+      services/                      # Feature-specific services
+        cart-service.ts
+      hooks/                         # Feature-specific hooks
+        use-cart.ts
+        use-checkout.ts
+      models.ts                      # Feature-specific types/interfaces
+    
+    user-authentication/
+      user-authentication.tsx        # Main container
+      components/                    # Feature-specific components
+        login-form.tsx
+        register-form.tsx
+        password-reset.tsx
+      services/                      # Feature-specific services
+        auth-service.ts
+      hooks/                         # Feature-specific hooks
+        use-auth.ts
+      models.ts                      # Feature-specific types
+    
+    user-profile/
+      user-profile.tsx               # Main container
+      components/                    # Feature-specific components
+        profile-form.tsx
+        avatar-upload.tsx
+        settings-panel.tsx
+      services/
+        profile-service.ts
+      hooks/
+        use-profile.ts
+      models.ts
+  
+  shared/                            # ONLY for 2+ feature usage
+    components/
+      button.tsx                     # Used by multiple features
+      modal.tsx
+      input.tsx
+      card.tsx
+    hooks/
+      use-debounce.ts                # Used by multiple features
+      use-local-storage.ts
+    utils/
+      validation.ts                  # Shared utilities
+      formatting.ts
+  
+  infrastructure/                    # Cross-cutting concerns
+    api/
+      client.ts                      # API configuration
+      endpoints.ts
+    auth/
+      auth-provider.tsx              # Auth context
+      protected-route.tsx
+    monitoring/
+      error-boundary.tsx
+      analytics.ts
+```
+
+### Path Aliases Configuration
+
+Configure clean imports in `tsconfig.json`:
+
+```json tsconfig.json
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@features/*": ["src/features/*"],
+      "@shared/*": ["src/shared/*"],
+      "@infrastructure/*": ["src/infrastructure/*"]
+    }
+  }
+}
+```
+
+This enables clean imports:
+
+```typescript
+import { Button } from '@shared/components/button';
+import { useAuth } from '@features/user-authentication/hooks/use-auth';
+import { apiClient } from '@infrastructure/api/client';
+```
+
+## Component Patterns
+
+### Container Component (Feature Main)
+
+```typescript shopping-cart.tsx
+import { useState, useEffect } from 'react';
+import { CartItem } from './components/cart-item';
+import { CartSummary } from './components/cart-summary';
+import { CheckoutButton } from './components/checkout-button';
+import { useCart } from './hooks/use-cart';
+import type { CartItem as CartItemType } from './models';
+
+/**
+ * Shopping Cart Feature Container
+ * Handles cart state management and business logic
+ */
+export function ShoppingCart() {
+  const { items, total, addItem, removeItem, updateQuantity } = useCart();
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+
+  const handleCheckout = async () => {
+    setIsCheckingOut(true);
+    try {
+      // Checkout logic
+    } finally {
+      setIsCheckingOut(false);
+    }
+  };
+
+  return (
+    <div className="shopping-cart">
+      <h1>Shopping Cart</h1>
+      <div className="cart-items">
+        {items.map((item) => (
+          <CartItem
+            key={item.id}
+            item={item}
+            onRemove={removeItem}
+            onUpdateQuantity={updateQuantity}
+          />
+        ))}
+      </div>
+      <CartSummary total={total} itemCount={items.length} />
+      <CheckoutButton
+        onClick={handleCheckout}
+        disabled={isCheckingOut || items.length === 0}
+      />
+    </div>
+  );
+}
+```
+
+### Presentational Component (Feature-Specific)
+
+```typescript cart-item.tsx
+import type { CartItem as CartItemType } from '../models';
+import { Button } from '@shared/components/button';
+
+interface CartItemProps {
+  item: CartItemType;
+  onRemove: (id: string) => void;
+  onUpdateQuantity: (id: string, quantity: number) => void;
+}
+
+/**
+ * Cart Item Component
+ * Pure presentational component for displaying a cart item
+ */
+export function CartItem({ item, onRemove, onUpdateQuantity }: CartItemProps) {
+  return (
+    <div className="cart-item">
+      <img src={item.image} alt={item.name} />
+      <div className="item-details">
+        <h3>{item.name}</h3>
+        <p>${item.price}</p>
+      </div>
+      <div className="item-controls">
+        <input
+          type="number"
+          value={item.quantity}
+          onChange={(e) => onUpdateQuantity(item.id, parseInt(e.target.value))}
+          min="1"
+        />
+        <Button onClick={() => onRemove(item.id)} variant="danger">
+          Remove
+        </Button>
+      </div>
+    </div>
+  );
+}
+```
+
+### Custom Hook (Feature-Specific)
+
+```typescript use-cart.ts
+import { useState, useCallback } from 'react';
+import { cartService } from '../services/cart-service';
+import type { CartItem } from '../models';
+
+/**
+ * Custom hook for cart state management
+ */
+export function useCart() {
+  const [items, setItems] = useState<CartItem[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const addItem = useCallback(async (item: CartItem) => {
+    setLoading(true);
+    try {
+      const updatedCart = await cartService.addItem(item);
+      setItems(updatedCart);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const removeItem = useCallback(async (id: string) => {
+    setLoading(true);
+    try {
+      const updatedCart = await cartService.removeItem(id);
+      setItems(updatedCart);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const updateQuantity = useCallback(async (id: string, quantity: number) => {
+    setLoading(true);
+    try {
+      const updatedCart = await cartService.updateQuantity(id, quantity);
+      setItems(updatedCart);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+  return {
+    items,
+    total,
+    loading,
+    addItem,
+    removeItem,
+    updateQuantity,
+  };
+}
+```
+
+### Shared Component
+
+```typescript button.tsx
+import type { ReactNode } from 'react';
+
+interface ButtonProps {
+  children: ReactNode;
+  onClick?: () => void;
+  variant?: 'primary' | 'secondary' | 'danger';
+  disabled?: boolean;
+}
+
+/**
+ * Shared Button Component
+ * Used across multiple features (shopping-cart, user-profile, etc.)
+ */
+export function Button({
+  children,
+  onClick,
+  variant = 'primary',
+  disabled = false,
+}: ButtonProps) {
+  return (
+    <button
+      className={`button button--${variant}`}
+      onClick={onClick}
+      disabled={disabled}
+    >
+      {children}
+    </button>
+  );
+}
+```
+
+## Decision Framework
+
+The agent follows this systematic approach when analyzing component placement:
+
+1. **Count usage**: Identify exactly how many features use the component
+2. **Apply the rule**: 1 feature = local placement, 2+ features = shared/global
+3. **Validate**: Ensure the structure screams functionality
+4. **Document decision**: Explain WHY the placement was chosen
+
+### Decision Examples
+
+<Tabs>
+  <Tab title="Local Placement">
+    ```typescript
+    // Component used ONLY in shopping-cart feature
+    src/features/shopping-cart/components/cart-item.tsx
+    
+    // Reasoning: Used by only 1 feature → stays local
+    ```
+  </Tab>
+  
+  <Tab title="Shared Placement">
+    ```typescript
+    // Component used in shopping-cart AND user-profile
+    src/shared/components/button.tsx
+    
+    // Reasoning: Used by 2+ features → goes to shared
+    ```
+  </Tab>
+  
+  <Tab title="Infrastructure">
+    ```typescript
+    // Cross-cutting concern used app-wide
+    src/infrastructure/auth/auth-provider.tsx
+    
+    // Reasoning: App-wide concern → infrastructure
+    ```
+  </Tab>
+</Tabs>
+
+## Quality Checks
+
+Before finalizing any architectural decision, the agent verifies:
+
+1. **Scope verification**: Have you correctly counted feature usage?
+2. **Naming validation**: Do container names match feature names?
+3. **Screaming test**: Can a new developer understand what the app does from the structure alone?
+4. **Future-proofing**: Will this structure scale as features grow?
+
+## Edge Case Handling
+
+<AccordionGroup>
+  <Accordion title="Uncertain About Future Usage">
+    **Rule:** Start local, refactor to shared when needed.
+    
+    If you're uncertain whether a component will be used by multiple features, place it locally first. When a second feature needs it, refactor it to shared.
+  </Accordion>
+  
+  <Accordion title="Utilities That Might Become Shared">
+    **Rule:** Document the potential for extraction.
+    
+    Keep utilities local until they're actually needed by a second feature. Add a comment noting the potential for future extraction.
+  </Accordion>
+  
+  <Accordion title="Components on the Boundary">
+    **Rule:** Analyze actual import statements, not hypothetical usage.
+    
+    Look at actual imports in your codebase, not what you think might happen in the future. The Scope Rule is based on current reality, not speculation.
+  </Accordion>
+  
+  <Accordion title="Refactoring Existing Code">
+    **Rule:** Identify violations and provide specific refactoring instructions.
+    
+    When reviewing existing code, the agent identifies components that violate the Scope Rule and provides step-by-step refactoring guidance.
+  </Accordion>
+</AccordionGroup>
+
+## Communication Style
+
+The agent is direct and authoritative about architectural decisions:
+
+- States placement decisions with **confidence and clear reasoning**
+- **Never compromises** on the Scope Rule
+- Provides **concrete examples** to illustrate decisions
+- **Challenges poor architectural choices** constructively
+- Explains the **long-term benefits** of proper structure
+
+<Note>
+  The agent acts as the **guardian of clean, scalable architecture**, ensuring every decision results in a codebase that is immediately understandable, properly scoped, and built for long-term maintainability.
+</Note>
+
+## Installation and Setup
+
+When creating new projects, the agent will:
+
+1. **Install dependencies**:
+   - React 19
+   - TypeScript
+   - Vitest for testing
+   - ESLint for linting
+   - Prettier for formatting
+   - Husky for git hooks
+
+2. **Create the folder structure** following the pattern above
+
+3. **Configure path aliases** in `tsconfig.json`
+
+4. **Set up tooling** (ESLint, Prettier, Husky) with sensible defaults
+
+## Benefits of This Approach
+
+<CardGroup cols={2}>
+  <Card title="Immediate Understanding" icon="eye">
+    New developers understand what the app does by looking at folder structure
+  </Card>
+  <Card title="Easy Maintenance" icon="wrench">
+    Features are self-contained, making changes and debugging straightforward
+  </Card>
+  <Card title="Prevents Over-Abstraction" icon="ban">
+    Only create shared code when it's actually used by 2+ features
+  </Card>
+  <Card title="Scales Naturally" icon="up-right">
+    Structure grows with your application without becoming messy
+  </Card>
+  <Card title="Clear Ownership" icon="user">
+    Each feature has clear boundaries and responsibilities
+  </Card>
+  <Card title="Test-Friendly" icon="vial">
+    Self-contained features are easier to test in isolation
+  </Card>
+</CardGroup>
+
+<Warning>
+  The agent will challenge any deviation from the Scope Rule. This strictness is intentional and ensures long-term code quality and maintainability.
+</Warning>

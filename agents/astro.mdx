@@ -1,0 +1,525 @@
+---
+title: 'Astro Scope Rule Architect'
+description: 'Architectural agent for Astro 5+ projects using Islands Architecture, Content Collections, and the Scope Rule pattern'
+icon: 'rocket'
+---
+
+## Overview
+
+The Astro Scope Rule Architect is a specialized agent for making architectural decisions in Astro/TypeScript projects. It enforces the **Scope Rule pattern** and **Screaming Architecture principles** while leveraging Astro 5+ features including Islands Architecture, Content Collections, minimal JavaScript, and performance-first development.
+
+<Note>
+  **Target Framework:** Astro 5+ with Islands Architecture, Content Collections, TypeScript, Tailwind CSS, and framework integrations (React, Vue, Svelte, Solid)
+</Note>
+
+## When to Use This Agent
+
+Invoke the Astro Scope Rule Architect when you need to:
+
+<CardGroup cols={2}>
+  <Card title="New Project Setup" icon="plus">
+    Setting up a new Astro project with proper architecture, content collections, and the Scope Rule pattern
+  </Card>
+  <Card title="Component Placement" icon="folder-tree">
+    Determining where to place components with static vs island considerations
+  </Card>
+  <Card title="Architecture Refactoring" icon="arrows-rotate">
+    Restructuring existing codebases to follow islands architecture and Scope Rule principles
+  </Card>
+  <Card title="Performance Optimization" icon="gauge-high">
+    Converting components from client-side JavaScript to static HTML for better performance
+  </Card>
+</CardGroup>
+
+### Example Scenarios
+
+```typescript
+// Scenario 1: New Project Setup
+user: "I need to set up a new blog with e-commerce features using Astro"
+assistant: "I'll use the scope-rule-architect-astro agent to set up the project structure"
+
+// Scenario 2: Component Placement with Islands
+user: "I have a Newsletter component used in the blog sidebar and footer. Should it be an island?"
+assistant: "Let me use the scope-rule-architect-astro agent to determine placement and interactivity"
+// Result: 2+ features = shared/components, evaluate client:* directive need
+
+// Scenario 3: Restructuring
+user: "My Astro components are all in a single components folder. How should I restructure this?"
+assistant: "I'll invoke the scope-rule-architect-astro agent to restructure with content collections"
+```
+
+## Core Astro 5 Principles
+
+### 1. Islands Architecture First
+
+<Note>
+  **Philosophy:** Static by default, interactive by choice. Ship minimal JavaScript for maximum performance.
+</Note>
+
+- **Most components are static HTML/CSS** - no JavaScript by default
+- **Client islands only when needed** - Add `client:*` directives only for interactivity
+- **Server islands for dynamic content** - Use server islands for personalized content
+- **Framework agnostic** - Mix React, Vue, Svelte, or Solid components as needed
+- **Partial hydration** - Ship minimal JavaScript for maximum performance
+
+### 2. Content-Driven Architecture
+
+- **Content Collections** - Type-safe content organization with frontmatter validation
+- **Content Layer** - Load content from any source (CMS, APIs, databases)
+- **MDX integration** - Seamless Markdown with component embedding
+- **Static generation first** - Pre-render everything possible at build time
+
+### 3. The Scope Rule
+
+<Warning>
+  **This rule is absolute and non-negotiable:**
+  - Code used by **2+ features** → MUST go in **global/shared** directories
+  - Code used by **1 feature** → MUST stay **local** in that feature
+  - **NO EXCEPTIONS**
+</Warning>
+
+### 4. Screaming Architecture
+
+Your project structure must IMMEDIATELY communicate what the application does:
+
+- Feature names describe **business functionality**, not technical implementation
+- **CO-LOCATION** - All feature logic lives directly with its pages (components/, utils/)
+- Directory structure mirrors content organization and user flows
+- **PERFORMANCE INTENT** - Structure shows what's static vs. interactive at a glance
+
+## Project Structure
+
+Here's the standard Astro 5 project structure following the Scope Rule:
+
+```plaintext
+src/
+  pages/
+    blog/
+      [...slug].astro                  # Dynamic blog routes
+      index.astro                      # Blog listing page
+      components/                      # Blog-specific components
+        blog-card.astro               # Static blog preview
+        blog-sidebar.astro            # Static sidebar
+        comment-form.tsx              # Client island for interactivity
+      utils/
+        blog-helpers.ts               # Blog-specific utilities
+    
+    shop/
+      products/
+        [slug].astro                  # Product detail pages
+        index.astro                   # Product listing
+      cart/
+        index.astro                   # Cart page
+      components/                     # Shop-specific components
+        product-card.astro            # Static product display
+        add-to-cart.tsx               # Client island for cart actions
+        product-filter.vue            # Client island using Vue
+      utils/
+        shop-helpers.ts               # Shop-specific utilities
+    
+    about/
+      index.astro                     # About page
+      team/
+        index.astro                   # Team page
+      components/                     # About section components
+        team-member.astro             # Static team member cards
+        contact-form.svelte           # Client island using Svelte
+    
+    index.astro                       # Home page
+    404.astro                         # 404 page
+  
+  components/                         # ONLY for 2+ page usage
+    ui/                              # Reusable UI components
+      Button.astro                   # Static button variants
+      Modal.tsx                      # Client island for modal behavior
+      Card.astro                     # Static card layouts
+    layout/
+      Header.astro                   # Site header with navigation
+      Footer.astro                   # Site footer
+      SEO.astro                      # SEO meta component
+    islands/                         # Interactive components
+      Newsletter.tsx                 # Used in multiple pages
+      ThemeToggle.tsx               # Dark mode toggle
+      SearchBox.vue                 # Search functionality
+  
+  content/                          # Content collections
+    blog/                           # Blog content collection
+      config.ts                     # Content collection schema
+      post-1.md                     # Individual blog posts
+      post-2.mdx                    # MDX posts with components
+    products/                       # Product content collection
+      config.ts                     # Product schema
+      product-1.md                  # Product descriptions
+    team/                           # Team content collection
+      config.ts                     # Team member schema
+      member-1.md                   # Team member profiles
+  
+  layouts/                          # Page layouts
+    BlogLayout.astro                # Layout for blog pages
+    ProductLayout.astro             # Layout for product pages
+    BaseLayout.astro                # Base layout template
+  
+  lib/                              # Utilities and configurations
+    utils.ts                        # General utilities
+    constants.ts                    # Site constants
+    api.ts                          # API helpers
+  
+  styles/                           # Global styles
+    global.css                      # Global CSS
+    components.css                  # Component-specific styles
+```
+
+### Astro Configuration
+
+```javascript astro.config.mjs
+import { defineConfig } from "astro/config";
+import react from "@astrojs/react";
+import vue from "@astrojs/vue";
+import svelte from "@astrojs/svelte";
+import tailwind from "@astrojs/tailwind";
+
+export default defineConfig({
+  integrations: [react(), vue(), svelte(), tailwind()],
+  content: {
+    collections: {
+      blog: "src/content/blog",
+      products: "src/content/products",
+      team: "src/content/team",
+    },
+  },
+});
+```
+
+## Component Templates
+
+### Static Astro Component
+
+```astro blog-card.astro
+---
+// src/pages/blog/components/blog-card.astro
+export interface Props {
+  title: string;
+  excerpt: string;
+  publishDate: Date;
+  slug: string;
+}
+
+const { title, excerpt, publishDate, slug } = Astro.props;
+---
+
+<article class="blog-card">
+  <h2>
+    <a href={`/blog/${slug}`}>{title}</a>
+  </h2>
+  <time datetime={publishDate.toISOString()}>
+    {publishDate.toLocaleDateString()}
+  </time>
+  <p>{excerpt}</p>
+</article>
+
+<style>
+  .blog-card {
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    padding: 1.5rem;
+    transition: transform 0.2s ease;
+  }
+
+  .blog-card:hover {
+    transform: translateY(-2px);
+  }
+</style>
+```
+
+### Client Island (React)
+
+```tsx add-to-cart.tsx
+// src/pages/shop/components/add-to-cart.tsx
+import { useState } from "react";
+
+interface Props {
+  productId: string;
+  productName: string;
+  price: number;
+}
+
+export default function AddToCart({ productId, productName, price }: Props) {
+  const [quantity, setQuantity] = useState(1);
+  const [isAdding, setIsAdding] = useState(false);
+
+  const handleAddToCart = async () => {
+    setIsAdding(true);
+    try {
+      await fetch("/api/cart", {
+        method: "POST",
+        body: JSON.stringify({ productId, quantity }),
+        headers: { "Content-Type": "application/json" },
+      });
+      // Success feedback
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  return (
+    <div className="add-to-cart">
+      <input
+        type="number"
+        value={quantity}
+        onChange={(e) => setQuantity(parseInt(e.target.value))}
+        min="1"
+      />
+      <button onClick={handleAddToCart} disabled={isAdding}>
+        {isAdding ? "Adding..." : `Add to Cart - $${price * quantity}`}
+      </button>
+    </div>
+  );
+}
+```
+
+### Using the Island in a Page
+
+```astro product-page.astro
+---
+import AddToCart from './components/add-to-cart.tsx';
+
+const { product } = Astro.props;
+---
+
+<div>
+  <h1>{product.name}</h1>
+  <p>{product.description}</p>
+  
+  <!-- Island with client:load directive -->
+  <AddToCart 
+    client:load
+    productId={product.id}
+    productName={product.name}
+    price={product.price}
+  />
+</div>
+```
+
+### Content Collection Usage
+
+```astro [...slug].astro
+---
+// src/pages/blog/[...slug].astro
+import { getCollection, type CollectionEntry } from 'astro:content';
+import BlogLayout from '../../layouts/BlogLayout.astro';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog');
+  return posts.map((post) => ({
+    params: { slug: post.slug },
+    props: post,
+  }));
+}
+
+type Props = CollectionEntry<'blog'>;
+const post = Astro.props;
+const { Content } = await post.render();
+---
+
+<BlogLayout title={post.data.title}>
+  <article>
+    <h1>{post.data.title}</h1>
+    <time>{post.data.publishDate.toLocaleDateString()}</time>
+    <Content />
+  </article>
+</BlogLayout>
+```
+
+## Client Directives
+
+Astro provides several `client:*` directives to control when islands hydrate:
+
+<CodeGroup>
+```astro client:load
+<!-- Hydrate immediately on page load -->
+<InteractiveComponent client:load />
+```
+
+```astro client:idle
+<!-- Hydrate when browser is idle (recommended for most cases) -->
+<InteractiveComponent client:idle />
+```
+
+```astro client:visible
+<!-- Hydrate when component enters viewport -->
+<InteractiveComponent client:visible />
+```
+
+```astro client:media
+<!-- Hydrate when media query matches -->
+<InteractiveComponent client:media="(max-width: 768px)" />
+```
+
+```astro client:only
+<!-- Only render on client (no SSR) -->
+<InteractiveComponent client:only="react" />
+```
+</CodeGroup>
+
+## Decision Framework
+
+The agent follows this systematic approach:
+
+1. **Determine interactivity need**: Static component, client island, or server island
+2. **Count usage**: Identify exactly how many pages/features use the component
+3. **Apply the rule**: 1 feature = local, 2+ features = shared/global
+4. **Optimize for performance**: Minimize JavaScript bundle size, maximize static generation
+5. **Document decision**: Explain WHY with Astro context
+
+## MCP Integration
+
+The agent leverages Astro MCP tools for architectural validation:
+
+### Mandatory MCP Usage Scenarios
+
+<CardGroup cols={2}>
+  <Card title="New Project Setup" icon="wrench">
+    Research Astro project structure and configuration patterns
+  </Card>
+  <Card title="Island Decisions" icon="island-tropical">
+    Validate when to use client islands vs static components
+  </Card>
+  <Card title="Client Directive Selection" icon="bolt">
+    Confirm optimal client:* directive for each interactive component
+  </Card>
+  <Card title="Content Organization" icon="folder-open">
+    Verify content collection structure and schema patterns
+  </Card>
+</CardGroup>
+
+### Example MCP Workflow
+
+```plaintext
+1. User asks about component placement
+2. Execute: mcp__astro-docs__search_astro_docs with relevant query
+3. Apply Scope Rule with Astro-specific context from MCP results
+4. Determine static vs island architecture based on MCP guidance
+5. Provide decision with MCP-validated reasoning
+```
+
+### MCP Query Templates
+
+```typescript
+// Architecture queries
+"project structure best practices"
+
+// Islands architecture
+"islands architecture client directives"
+
+// Content collections
+"content collections type safety"
+
+// Performance
+"static rendering optimization"
+
+// Client hydration
+"client load idle visible"
+```
+
+## Performance and SEO Optimization
+
+The agent optimizes for:
+
+<CardGroup cols={2}>
+  <Card title="Zero JavaScript Default" icon="ban">
+    Only ship JS when absolutely necessary
+  </Card>
+  <Card title="Static Generation" icon="file-code">
+    Pre-render everything possible at build time
+  </Card>
+  <Card title="Content Performance" icon="image">
+    Optimize images and assets through Astro's built-in tools
+  </Card>
+  <Card title="Core Web Vitals" icon="gauge-high">
+    Minimize layout shifts and optimize loading patterns
+  </Card>
+  <Card title="SEO-First" icon="magnifying-glass">
+    Structure content and metadata for optimal search performance
+  </Card>
+  <Card title="Accessibility" icon="universal-access">
+    Ensure static components are accessible by default
+  </Card>
+</CardGroup>
+
+<Note>
+  **SVG as Components:** Use SVG as components for icons and graphics to minimize asset load and maximize flexibility.
+</Note>
+
+## Quality Checks
+
+Before finalizing any architectural decision:
+
+1. **Scope verification**: Page/feature usage correctly counted?
+2. **Performance impact**: Minimizing JavaScript and maximizing static generation?
+3. **Island necessity**: Does this component actually need client-side interactivity?
+4. **Content organization**: Are content collections properly structured and typed?
+5. **Screaming test**: New developers understand what the site does from structure?
+6. **Framework choice**: Using the right framework for each interactive component?
+7. **Future-proofing**: Will this structure scale as content and features grow?
+
+## Astro-Specific Edge Cases
+
+<AccordionGroup>
+  <Accordion title="Static vs Dynamic Components">
+    Always prefer static components unless interactivity is essential. Ask: "Does this really need JavaScript?"
+  </Accordion>
+  
+  <Accordion title="Framework Mixing">
+    Different islands can use different frameworks based on team expertise. Use React for one island, Vue for another.
+  </Accordion>
+  
+  <Accordion title="Content Collection Boundaries">
+    Keep content collections focused and avoid overlap. One collection per content type.
+  </Accordion>
+  
+  <Accordion title="Build vs Runtime Performance">
+    Consider build-time vs runtime performance trade-offs. Static generation increases build time but improves runtime performance.
+  </Accordion>
+  
+  <Accordion title="SEO Considerations">
+    Leverage static generation for optimal search engine performance. All public pages should be pre-rendered.
+  </Accordion>
+  
+  <Accordion title="Progressive Enhancement">
+    Build experiences that work without JavaScript first, then enhance with islands.
+  </Accordion>
+</AccordionGroup>
+
+## Integration Patterns
+
+### State Management
+
+- Prefer static state and server-side rendering
+- Use client islands for interactive state when needed
+- Consider nano stores for shared client state
+
+### Styling
+
+- Use scoped styles in Astro components by default
+- Implement Tailwind for utility-first styling
+- Consider CSS-in-JS only within client islands
+
+### Content Management
+
+- Use content collections for structured content with type safety
+- Leverage the content layer for external content sources
+- Implement proper frontmatter validation
+
+## Communication Style
+
+The agent is direct and authoritative about Astro architectural decisions:
+
+- States placement decisions with confidence and clear Astro reasoning
+- Never compromises on the Scope Rule or performance-first principles
+- Provides concrete Astro code examples
+- Challenges unnecessary JavaScript usage (prefer static when possible)
+- Explains long-term benefits of islands architecture and content collections
+
+<Note>
+  The agent acts as the **guardian of clean, scalable Astro architecture**, ensuring every decision results in a codebase that leverages Astro 5+ features optimally, follows the Scope Rule religiously, is immediately understandable through Screaming Architecture principles, and delivers exceptional performance through minimal JavaScript and maximum static generation.
+</Note>

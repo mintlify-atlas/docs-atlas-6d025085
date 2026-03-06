@@ -1,0 +1,575 @@
+---
+title: Shared Components Pattern
+description: How to identify, extract, and maintain shared components following the Scope Rule
+---
+
+## The Scope Rule for Components
+
+The rule is simple and absolute:
+
+<Card title="The Scope Rule" icon="scale-balanced">
+  **Code used by 2+ features → MUST go in global/shared directories**
+  
+  **Code used by 1 feature → MUST stay local in that feature**
+  
+  **NO EXCEPTIONS**
+</Card>
+
+## Identifying Shared Components
+
+Before moving a component to shared, ask:
+
+1. **Is it used by 2+ features?** Count actual usage, not hypothetical future use
+2. **Does it cross feature boundaries?** Same feature doesn't count as "shared"
+3. **Is it truly generic?** Or is it feature-specific logic in disguise?
+
+## Examples from Real Projects
+
+### Example 1: ProductCard Component
+
+**Scenario:** E-commerce application with product listings, shopping cart, and wishlist.
+
+**Analysis:**
+- Used in: `/shop` (product listing), `/cart` (cart items), `/wishlist` (saved items)
+- Count: 3 different features
+- Generic: Yes, displays product information consistently
+
+**Decision:** ✅ Shared component
+
+<Tabs>
+  <Tab title="Next.js">
+    ```typescript
+    // ✅ CORRECT: shared/components/product-card.tsx
+    interface ProductCardProps {
+      id: string;
+      title: string;
+      price: number;
+      image: string;
+      onAction?: () => void;
+      actionLabel?: string;
+    }
+
+    export function ProductCard({ 
+      id, 
+      title, 
+      price, 
+      image, 
+      onAction, 
+      actionLabel 
+    }: ProductCardProps) {
+      return (
+        <div className="product-card">
+          <img src={image} alt={title} />
+          <h3>{title}</h3>
+          <p>${price}</p>
+          {onAction && (
+            <button onClick={onAction}>
+              {actionLabel || 'View'}
+            </button>
+          )}
+        </div>
+      );
+    }
+    ```
+
+    Usage in features:
+
+    ```typescript
+    // app/(shop)/shop/_components/product-list.tsx
+    import { ProductCard } from '@/shared/components/product-card';
+
+    export function ProductList({ products }) {
+      return products.map(product => (
+        <ProductCard
+          key={product.id}
+          {...product}
+          actionLabel="Add to Cart"
+          onAction={() => addToCart(product.id)}
+        />
+      ));
+    }
+
+    // app/(shop)/cart/_components/cart-item.tsx
+    import { ProductCard } from '@/shared/components/product-card';
+
+    export function CartItem({ item }) {
+      return (
+        <ProductCard
+          {...item}
+          actionLabel="Remove"
+          onAction={() => removeFromCart(item.id)}
+        />
+      );
+    }
+    ```
+  </Tab>
+
+  <Tab title="Angular">
+    ```typescript
+    // ✅ CORRECT: features/shared/components/product-card.ts
+    import { Component, input, output, ChangeDetectionStrategy } from '@angular/core';
+
+    @Component({
+      selector: 'app-product-card',
+      changeDetection: ChangeDetectionStrategy.OnPush,
+      template: `
+        <div class="product-card">
+          <img [src]="image()" [alt]="title()" />
+          <h3>{{ title() }}</h3>
+          <p>\${{ price() }}</p>
+          @if (actionLabel()) {
+            <button (click)="action.emit()">
+              {{ actionLabel() }}
+            </button>
+          }
+        </div>
+      `,
+    })
+    export class ProductCardComponent {
+      readonly id = input.required<string>();
+      readonly title = input.required<string>();
+      readonly price = input.required<number>();
+      readonly image = input.required<string>();
+      readonly actionLabel = input<string>();
+      
+      readonly action = output<void>();
+    }
+    ```
+
+    Usage:
+
+    ```typescript
+    // features/shop/products/components/product-list.ts
+    import { ProductCardComponent } from '@features/shared/components/product-card';
+
+    @Component({
+      selector: 'app-product-list',
+      imports: [ProductCardComponent],
+      template: `
+        @for (product of products(); track product.id) {
+          <app-product-card
+            [id]="product.id"
+            [title]="product.title"
+            [price]="product.price"
+            [image]="product.image"
+            [actionLabel]="'Add to Cart'"
+            (action)="addToCart(product.id)"
+          />
+        }
+      `,
+    })
+    export class ProductListComponent {
+      // Component logic
+    }
+    ```
+  </Tab>
+
+  <Tab title="Astro">
+    ```astro
+    ---
+    // ✅ CORRECT: components/ui/ProductCard.astro
+    export interface Props {
+      id: string;
+      title: string;
+      price: number;
+      image: string;
+      actionLabel?: string;
+    }
+
+    const { id, title, price, image, actionLabel } = Astro.props;
+    ---
+
+    <div class="product-card">
+      <img src={image} alt={title} />
+      <h3>{title}</h3>
+      <p>${price}</p>
+      {actionLabel && (
+        <button data-product-id={id}>
+          {actionLabel}
+        </button>
+      )}
+    </div>
+    ```
+
+    Usage:
+
+    ```astro
+    ---
+    // pages/shop/index.astro
+    import ProductCard from '../../components/ui/ProductCard.astro';
+    import AddToCart from './components/add-to-cart.tsx';
+
+    const products = await getProducts();
+    ---
+
+    <div class="product-grid">
+      {products.map(product => (
+        <div>
+          <ProductCard {...product} />
+          <AddToCart client:visible productId={product.id} />
+        </div>
+      ))}
+    </div>
+    ```
+  </Tab>
+</Tabs>
+
+### Example 2: Comment Section
+
+**Scenario:** Blog with post pages and a community forum.
+
+**Analysis:**
+- Used in: `/blog/[slug]` (blog posts), `/forum/[topic]` (forum topics)
+- Count: 2 different features
+- Generic: Yes, handles user comments the same way
+
+**Decision:** ✅ Shared component
+
+```typescript
+// shared/components/comment-section.tsx
+interface CommentSectionProps {
+  entityId: string;
+  entityType: 'post' | 'topic';
+}
+
+export function CommentSection({ entityId, entityType }: CommentSectionProps) {
+  const { comments, addComment } = useComments(entityId, entityType);
+  
+  return (
+    <div className="comment-section">
+      {comments.map(comment => (
+        <Comment key={comment.id} {...comment} />
+      ))}
+      <CommentForm onSubmit={addComment} />
+    </div>
+  );
+}
+```
+
+### Example 3: Login Form
+
+**Scenario:** Application with authentication feature.
+
+**Analysis:**
+- Used in: `/login` page only
+- Count: 1 feature (authentication)
+- Specific: Contains authentication-specific logic
+
+**Decision:** ❌ NOT shared - stays local to auth feature
+
+```typescript
+// ❌ WRONG: shared/components/login-form.tsx
+// ✅ CORRECT: app/(auth)/login/_components/login-form.tsx
+
+export function LoginForm() {
+  const { login } = useAuth();
+  // Authentication-specific logic
+}
+```
+
+### Example 4: Social Login Buttons
+
+**Scenario:** Used in both login and register pages.
+
+**Analysis:**
+- Used in: `/login` and `/register`
+- Count: 2 pages, but same feature (auth)
+- Specific: Authentication-specific
+
+**Decision:** ⚠️ Shared within auth feature, NOT globally shared
+
+<Tabs>
+  <Tab title="Next.js">
+    ```typescript
+    // ✅ CORRECT: app/(auth)/_components/social-login.tsx
+    // NOT: shared/components/social-login.tsx
+
+    export function SocialLogin() {
+      const { loginWithGoogle, loginWithGithub } = useAuth();
+      
+      return (
+        <div className="social-login">
+          <button onClick={loginWithGoogle}>Google</button>
+          <button onClick={loginWithGithub}>GitHub</button>
+        </div>
+      );
+    }
+    ```
+  </Tab>
+
+  <Tab title="Angular">
+    ```typescript
+    // ✅ CORRECT: features/auth/components/social-login.ts
+    // NOT: features/shared/components/social-login.ts
+
+    @Component({
+      selector: 'app-social-login',
+      template: `
+        <div class="social-login">
+          <button (click)="loginWithGoogle()">Google</button>
+          <button (click)="loginWithGithub()">GitHub</button>
+        </div>
+      `,
+    })
+    export class SocialLoginComponent {
+      private authService = inject(AuthService);
+      
+      loginWithGoogle() {
+        this.authService.loginWithGoogle();
+      }
+      
+      loginWithGithub() {
+        this.authService.loginWithGithub();
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Common Shared Component Categories
+
+<CardGroup cols={2}>
+  <Card title="UI Primitives" icon="shapes">
+    Button, Input, Card, Modal - Generic, unstyled or lightly styled components used everywhere.
+  </Card>
+  
+  <Card title="Layout Components" icon="layout">
+    Header, Footer, Sidebar - Used across multiple feature groups or pages.
+  </Card>
+  
+  <Card title="Data Display" icon="chart-line">
+    Tables, Charts, Lists - When multiple features need to display data the same way.
+  </Card>
+  
+  <Card title="Feedback" icon="bell">
+    Toasts, Alerts, Loading Spinners - Global UI feedback mechanisms.
+  </Card>
+</CardGroup>
+
+## Anti-patterns to Avoid
+
+### ❌ Premature Sharing
+
+```typescript
+// ❌ BAD: Moving to shared "just in case"
+// shared/components/product-filter.tsx
+// Used only in /shop currently
+
+// ✅ GOOD: Keep local until 2nd feature needs it
+// app/(shop)/shop/_components/product-filter.tsx
+```
+
+### ❌ Feature Logic in Shared Components
+
+```typescript
+// ❌ BAD: Feature-specific logic in shared component
+// shared/components/user-card.tsx
+export function UserCard({ user }) {
+  const { deleteUser } = useUserManagement(); // Admin-specific
+  // ...
+}
+
+// ✅ GOOD: Keep feature logic in feature
+// shared/components/user-card.tsx
+export function UserCard({ user, actions }) {
+  return (
+    <div>
+      {/* Display only */}
+      {actions}
+    </div>
+  );
+}
+
+// features/users/components/user-table.tsx
+import { UserCard } from '@/shared/components/user-card';
+
+export function UserTable() {
+  const { deleteUser } = useUserManagement();
+  
+  return (
+    <UserCard 
+      user={user}
+      actions={
+        <button onClick={() => deleteUser(user.id)}>Delete</button>
+      }
+    />
+  );
+}
+```
+
+### ❌ Everything in Shared
+
+```typescript
+// ❌ BAD: Everything in shared "just to be safe"
+shared/
+  components/
+    product-card.tsx       // Used in 3 features ✓
+    login-form.tsx         // Used in 1 feature ✗
+    dashboard-stats.tsx    // Used in 1 feature ✗
+    blog-sidebar.tsx       // Used in 1 feature ✗
+
+// ✅ GOOD: Only truly shared components
+shared/
+  components/
+    product-card.tsx       // Used in shop, cart, wishlist ✓
+    comment-section.tsx    // Used in blog, forum ✓
+```
+
+## Extraction Process
+
+When you realize a component is now used by a 2nd feature:
+
+1. **Move the component** to shared directory
+2. **Update imports** in both features
+3. **Remove feature-specific logic** - make it generic
+4. **Add prop-based customization** for feature-specific behavior
+5. **Update tests** to cover both use cases
+
+### Before Extraction
+
+```typescript
+// features/shop/components/product-card.tsx
+export function ProductCard({ product }) {
+  const { addToCart } = useCart();
+  
+  return (
+    <div>
+      <img src={product.image} />
+      <h3>{product.title}</h3>
+      <button onClick={() => addToCart(product.id)}>
+        Add to Cart
+      </button>
+    </div>
+  );
+}
+```
+
+### After Extraction
+
+```typescript
+// shared/components/product-card.tsx
+interface ProductCardProps {
+  product: Product;
+  onAction?: (id: string) => void;
+  actionLabel?: string;
+}
+
+export function ProductCard({ product, onAction, actionLabel }: ProductCardProps) {
+  return (
+    <div>
+      <img src={product.image} />
+      <h3>{product.title}</h3>
+      {onAction && (
+        <button onClick={() => onAction(product.id)}>
+          {actionLabel}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// features/shop/components/product-list.tsx
+import { ProductCard } from '@/shared/components/product-card';
+import { useCart } from '../hooks/use-cart';
+
+export function ProductList({ products }) {
+  const { addToCart } = useCart();
+  
+  return products.map(product => (
+    <ProductCard
+      key={product.id}
+      product={product}
+      onAction={addToCart}
+      actionLabel="Add to Cart"
+    />
+  ));
+}
+
+// features/wishlist/components/wishlist-grid.tsx
+import { ProductCard } from '@/shared/components/product-card';
+import { useWishlist } from '../hooks/use-wishlist';
+
+export function WishlistGrid({ items }) {
+  const { removeFromWishlist } = useWishlist();
+  
+  return items.map(item => (
+    <ProductCard
+      key={item.id}
+      product={item}
+      onAction={removeFromWishlist}
+      actionLabel="Remove"
+    />
+  ));
+}
+```
+
+## Testing Shared Components
+
+Shared components need more thorough testing since they're used everywhere:
+
+```typescript
+// shared/components/__tests__/product-card.test.tsx
+import { render, screen } from '@testing-library/react';
+import { ProductCard } from '../product-card';
+
+describe('ProductCard', () => {
+  const mockProduct = {
+    id: '1',
+    title: 'Test Product',
+    price: 99.99,
+    image: '/test.jpg',
+  };
+
+  it('renders product information', () => {
+    render(<ProductCard product={mockProduct} />);
+    expect(screen.getByText('Test Product')).toBeInTheDocument();
+    expect(screen.getByText('$99.99')).toBeInTheDocument();
+  });
+
+  it('calls onAction when button is clicked', () => {
+    const onAction = jest.fn();
+    render(
+      <ProductCard 
+        product={mockProduct} 
+        onAction={onAction} 
+        actionLabel="Test Action" 
+      />
+    );
+    
+    screen.getByText('Test Action').click();
+    expect(onAction).toHaveBeenCalledWith('1');
+  });
+
+  it('does not render button when onAction is not provided', () => {
+    render(<ProductCard product={mockProduct} />);
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+});
+```
+
+## Documentation
+
+Shared components should have clear documentation:
+
+```typescript
+/**
+ * ProductCard displays product information consistently across features.
+ * 
+ * Used in:
+ * - Shop feature (product listing)
+ * - Cart feature (cart items)
+ * - Wishlist feature (saved items)
+ * 
+ * @example
+ * ```tsx
+ * <ProductCard
+ *   product={product}
+ *   onAction={(id) => addToCart(id)}
+ *   actionLabel="Add to Cart"
+ * />
+ * ```
+ */
+export function ProductCard({ product, onAction, actionLabel }: ProductCardProps) {
+  // Implementation
+}
+```

@@ -1,0 +1,831 @@
+---
+title: Project Setup Guide
+description: Set up new projects with proper Scope Rule architecture from the start
+icon: folder-tree
+---
+
+Starting a project with the right structure saves countless hours of refactoring later. This guide shows you how to set up projects following the Scope Rule for each supported framework.
+
+## Framework-Specific Setup
+
+<Tabs>
+  <Tab title="Angular">
+    ### Angular 20+ Setup
+
+    Set up a modern Angular project with standalone components, signals, and the Scope Rule architecture.
+
+    <Steps>
+      <Step title="Install Angular and Dependencies">
+        ```bash
+        # Create new Angular project
+        npx @angular/cli@latest new my-project
+
+        # Select options:
+        # - TypeScript: Yes
+        # - Standalone components: Yes
+        # - SSR: Optional
+        # - Routing: Yes
+
+        cd my-project
+
+        # Install additional dependencies
+        npm install --save-dev vitest @vitest/ui prettier husky
+        ```
+      </Step>
+
+      <Step title="Create Directory Structure">
+        ```bash
+        # Create feature-based structure
+        mkdir -p src/app/features/{auth,shop,profile}
+        mkdir -p src/app/features/shared/{components,services,guards,pipes,directives,signals}
+        mkdir -p src/app/core/{services,interceptors,guards}
+
+        # Create auth feature structure
+        mkdir -p src/app/features/auth/{login,register}
+        mkdir -p src/app/features/auth/{components,services,guards,models,signals}
+        mkdir -p src/app/features/auth/login/components
+        mkdir -p src/app/features/auth/register/components
+
+        # Create shop feature structure
+        mkdir -p src/app/features/shop/{products,cart,wishlist}
+        mkdir -p src/app/features/shop/{components,services,models,signals}
+        mkdir -p src/app/features/shop/products/components
+        mkdir -p src/app/features/shop/cart/components
+        ```
+      </Step>
+
+      <Step title="Configure TypeScript Paths">
+        Update `tsconfig.json` with path aliases:
+
+        ```json
+        {
+          "compilerOptions": {
+            "paths": {
+              "@features/*": ["src/app/features/*"],
+              "@shared/*": ["src/app/features/shared/*"],
+              "@core/*": ["src/app/core/*"]
+            }
+          }
+        }
+        ```
+      </Step>
+
+      <Step title="Create Standalone Component Template">
+        Create your first feature component:
+
+        ```typescript
+        // src/app/features/shop/shop.ts
+        import {
+          Component,
+          ChangeDetectionStrategy,
+          signal,
+          computed,
+          inject,
+        } from '@angular/core';
+        import { ShopService } from './services/shop';
+
+        @Component({
+          selector: 'app-shop',
+          imports: [/* dependencies */],
+          changeDetection: ChangeDetectionStrategy.OnPush,
+          template: `
+            <div class="shop">
+              @if (loading()) {
+                <div>Loading products...</div>
+              } @else {
+                <h1>Shop</h1>
+                @for (product of products(); track product.id) {
+                  <div>{{ product.name }}</div>
+                }
+              }
+            </div>
+          `,
+        })
+        export class ShopComponent {
+          private readonly shopService = inject(ShopService);
+          
+          readonly loading = signal(false);
+          readonly products = signal<Product[]>([]);
+        }
+        ```
+      </Step>
+
+      <Step title="Set Up Routing">
+        Configure routes with standalone components:
+
+        ```typescript
+        // src/app/routes.ts
+        import { Routes } from '@angular/router';
+
+        export const routes: Routes = [
+          {
+            path: 'shop',
+            loadComponent: () => import('./features/shop/shop').then(m => m.ShopComponent),
+          },
+          {
+            path: 'auth/login',
+            loadComponent: () => import('./features/auth/login/login').then(m => m.LoginComponent),
+          },
+        ];
+        ```
+      </Step>
+    </Steps>
+
+    ### Key Angular Principles
+
+    - **No NgModules**: All components are standalone by default in Angular 20
+    - **Use `inject()` function**: Avoid constructor injection
+    - **Signals everywhere**: Replace lifecycle hooks with signals and `computed()`
+    - **Modern control flow**: Use `@if`, `@for`, `@switch` instead of structural directives
+    - **OnPush detection**: Always use `ChangeDetectionStrategy.OnPush`
+
+    ### Directory Structure Result
+
+    ```
+    src/
+      app/
+        features/
+          auth/
+            login/
+              login.ts                # Main component
+              components/             # Login-specific components
+            register/
+              register.ts
+              components/
+            components/               # Shared within auth
+              social-login.ts
+            services/
+              auth.ts
+            signals/
+              auth-state.ts
+            guards/
+              auth.guard.ts
+          shop/
+            products/
+              products.ts
+              components/
+            cart/
+              cart.ts
+              components/
+            components/               # Shared within shop
+            services/
+              shop.ts
+            signals/
+              cart.signal.ts
+          shared/                     # ONLY for 2+ feature usage
+            components/
+            services/
+            signals/
+        core/                         # Singleton services
+          services/
+            api.ts
+          interceptors/
+            auth.interceptor.ts
+        main.ts
+        app.ts
+        routes.ts
+    ```
+  </Tab>
+
+  <Tab title="Next.js">
+    ### Next.js 15+ Setup
+
+    Set up a Next.js project with App Router, Server Components, and the Scope Rule architecture.
+
+    <Steps>
+      <Step title="Install Next.js and Dependencies">
+        ```bash
+        # Create new Next.js project
+        npx create-next-app@latest my-project
+
+        # Select options:
+        # - TypeScript: Yes
+        # - ESLint: Yes
+        # - Tailwind CSS: Yes
+        # - App Router: Yes
+        # - Turbopack: Optional
+
+        cd my-project
+
+        # Install additional dependencies
+        npm install --save-dev prettier husky
+        npm install server-only
+        ```
+      </Step>
+
+      <Step title="Create Route Group Structure">
+        ```bash
+        # Create feature route groups
+        mkdir -p src/app/{\(auth\),\(shop\),\(dashboard\)}
+
+        # Auth feature
+        mkdir -p src/app/\(auth\)/{login,register}
+        mkdir -p src/app/\(auth\)/{_components,_hooks,_actions}
+        mkdir -p src/app/\(auth\)/login/_components
+        mkdir -p src/app/\(auth\)/register/_components
+
+        # Shop feature
+        mkdir -p src/app/\(shop\)/{shop,cart,wishlist}
+        mkdir -p src/app/\(shop\)/{_components,_hooks,_actions}
+        mkdir -p src/app/\(shop\)/shop/_components
+        mkdir -p src/app/\(shop\)/cart/_components
+
+        # Shared (2+ features only)
+        mkdir -p src/shared/{components,hooks,actions,types}
+        mkdir -p src/shared/components/ui
+
+        # Library utilities
+        mkdir -p src/lib
+        ```
+      </Step>
+
+      <Step title="Configure TypeScript Paths">
+        Update `tsconfig.json` with path aliases:
+
+        ```json
+        {
+          "compilerOptions": {
+            "paths": {
+              "@/*": ["./src/*"],
+              "@/components/*": ["./src/components/*"],
+              "@/lib/*": ["./src/lib/*"],
+              "@/shared/*": ["./src/shared/*"]
+            }
+          }
+        }
+        ```
+      </Step>
+
+      <Step title="Create Server Component Page">
+        Create your first feature page (Server Component by default):
+
+        ```typescript
+        // src/app/(shop)/shop/page.tsx
+        import { Suspense } from 'react';
+        import { getProducts } from '../_actions/product-actions';
+        import { ProductList } from './_components/product-list';
+        import { ProductFilter } from './_components/product-filter';
+
+        export default async function ShopPage() {
+          const products = await getProducts();
+
+          return (
+            <div className="shop-page">
+              <h1>Shop</h1>
+              <Suspense fallback={<div>Loading...</div>}>
+                <ProductFilter />
+                <ProductList products={products} />
+              </Suspense>
+            </div>
+          );
+        }
+        ```
+      </Step>
+
+      <Step title="Create Server Actions">
+        Set up Server Actions with proper isolation:
+
+        ```typescript
+        // src/app/(shop)/_actions/product-actions.ts
+        'use server';
+        import 'server-only';
+        import { revalidatePath } from 'next/cache';
+
+        export async function getProducts() {
+          // Server-side data fetching
+          const products = await fetch('...');
+          return products;
+        }
+
+        export async function addToCart(productId: string) {
+          // Server-side mutation
+          await saveToCart(productId);
+          revalidatePath('/cart');
+        }
+        ```
+      </Step>
+
+      <Step title="Create Route Layouts">
+        Add layouts for feature groups:
+
+        ```typescript
+        // src/app/(shop)/layout.tsx
+        import { ShopHeader } from './_components/shop-header';
+
+        export default function ShopLayout({
+          children,
+        }: {
+          children: React.ReactNode;
+        }) {
+          return (
+            <div className="shop-layout">
+              <ShopHeader />
+              <main>{children}</main>
+            </div>
+          );
+        }
+        ```
+      </Step>
+    </Steps>
+
+    ### Key Next.js Principles
+
+    - **Server Components first**: Add `"use client"` only when needed
+    - **Route groups**: Use `(group-name)` for organization without URL impact
+    - **Private folders**: Use `_folder` to keep code out of routing system
+    - **Server Actions isolation**: Always use `"server-only"` package
+    - **Co-location**: Keep route-specific code close to pages
+
+    ### Directory Structure Result
+
+    ```
+    src/
+      app/
+        (auth)/                    # Auth route group
+          login/
+            page.tsx               # /login
+            _components/           # Private: login-specific
+              login-form.tsx
+          register/
+            page.tsx               # /register
+            _components/
+          _components/             # Shared within auth
+            social-login.tsx
+          _actions/
+            auth-actions.ts
+          layout.tsx
+        (shop)/                    # Shop route group
+          shop/
+            page.tsx               # /shop
+            _components/
+          cart/
+            page.tsx               # /cart
+            _components/
+          _components/             # Shared within shop
+          _actions/
+            product-actions.ts
+          layout.tsx
+        page.tsx                   # Home
+        layout.tsx                 # Root layout
+      shared/                      # 2+ route groups only
+        components/
+          product-card.tsx
+        actions/
+      lib/
+        utils.ts
+        db.ts
+    ```
+  </Tab>
+
+  <Tab title="Astro">
+    ### Astro 5+ Setup
+
+    Set up an Astro project with Islands Architecture, Content Collections, and the Scope Rule.
+
+    <Steps>
+      <Step title="Install Astro and Dependencies">
+        ```bash
+        # Create new Astro project
+        npm create astro@latest my-project
+
+        # Select template: Empty
+        # TypeScript: Yes, strict
+
+        cd my-project
+
+        # Install integrations
+        npx astro add react vue svelte tailwind
+
+        # Install additional dependencies
+        npm install --save-dev prettier
+        ```
+      </Step>
+
+      <Step title="Create Page-Based Structure">
+        ```bash
+        # Create feature pages
+        mkdir -p src/pages/{blog,shop,about}
+
+        # Blog feature
+        mkdir -p src/pages/blog/{components,utils}
+
+        # Shop feature
+        mkdir -p src/pages/shop/{products,cart}
+        mkdir -p src/pages/shop/{components,utils}
+        mkdir -p src/pages/shop/products/components
+        mkdir -p src/pages/shop/cart/components
+
+        # Shared components (2+ pages)
+        mkdir -p src/components/{ui,layout,islands}
+
+        # Content collections
+        mkdir -p src/content/{blog,products}
+
+        # Layouts
+        mkdir -p src/layouts
+
+        # Library utilities
+        mkdir -p src/lib
+        ```
+      </Step>
+
+      <Step title="Configure Astro">
+        Update `astro.config.mjs`:
+
+        ```javascript
+        import { defineConfig } from 'astro/config';
+        import react from '@astrojs/react';
+        import vue from '@astrojs/vue';
+        import svelte from '@astrojs/svelte';
+        import tailwind from '@astrojs/tailwind';
+
+        export default defineConfig({
+          integrations: [react(), vue(), svelte(), tailwind()],
+          output: 'static', // or 'hybrid' for SSR
+        });
+        ```
+      </Step>
+
+      <Step title="Create Static Page Component">
+        Create your first page:
+
+        ```astro
+        ---
+        // src/pages/blog/index.astro
+        import { getCollection } from 'astro:content';
+        import BlogLayout from '../../layouts/BlogLayout.astro';
+        import BlogCard from './components/blog-card.astro';
+
+        const posts = await getCollection('blog');
+        ---
+
+        <BlogLayout title="Blog">
+          <h1>Blog Posts</h1>
+          <div class="blog-grid">
+            {posts.map((post) => (
+              <BlogCard 
+                title={post.data.title}
+                excerpt={post.data.excerpt}
+                slug={post.slug}
+              />
+            ))}
+          </div>
+        </BlogLayout>
+        ```
+      </Step>
+
+      <Step title="Create Content Collections">
+        Set up type-safe content:
+
+        ```typescript
+        // src/content/config.ts
+        import { defineCollection, z } from 'astro:content';
+
+        const blog = defineCollection({
+          type: 'content',
+          schema: z.object({
+            title: z.string(),
+            excerpt: z.string(),
+            publishDate: z.date(),
+            author: z.string(),
+            tags: z.array(z.string()),
+          }),
+        });
+
+        export const collections = { blog };
+        ```
+      </Step>
+
+      <Step title="Create Interactive Islands">
+        Add client-side interactivity when needed:
+
+        ```tsx
+        // src/components/islands/Newsletter.tsx (React)
+        import { useState } from 'react';
+
+        export default function Newsletter() {
+          const [email, setEmail] = useState('');
+          const [status, setStatus] = useState<'idle' | 'loading' | 'success'>('idle');
+
+          const handleSubmit = async (e: React.FormEvent) => {
+            e.preventDefault();
+            setStatus('loading');
+            // Submit logic
+            setStatus('success');
+          };
+
+          return (
+            <form onSubmit={handleSubmit}>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Your email"
+              />
+              <button type="submit" disabled={status === 'loading'}>
+                {status === 'loading' ? 'Subscribing...' : 'Subscribe'}
+              </button>
+            </form>
+          );
+        }
+        ```
+
+        Use it with client directive:
+        ```astro
+        ---
+        import Newsletter from '@/components/islands/Newsletter';
+        ---
+        <Newsletter client:load />
+        ```
+      </Step>
+    </Steps>
+
+    ### Key Astro Principles
+
+    - **Static by default**: No JavaScript unless you add client directives
+    - **Islands architecture**: Add interactivity surgically with `client:*`
+    - **Framework agnostic**: Mix React, Vue, Svelte in same project
+    - **Content Collections**: Type-safe content with frontmatter validation
+    - **Co-location**: Keep page-specific components with pages
+
+    ### Directory Structure Result
+
+    ```
+    src/
+      pages/
+        blog/
+          index.astro              # /blog
+          [...slug].astro          # /blog/post-slug
+          components/              # Blog-specific
+            blog-card.astro        # Static
+            comment-form.tsx       # Island (React)
+          utils/
+            blog-helpers.ts
+        shop/
+          products/
+            index.astro            # /shop/products
+            [slug].astro           # /shop/products/slug
+          cart/
+            index.astro            # /shop/cart
+          components/              # Shop-specific
+            product-card.astro
+            add-to-cart.vue        # Island (Vue)
+        index.astro                # Home
+      components/                  # 2+ pages only
+        ui/
+          Button.astro
+        islands/                   # Interactive components
+          Newsletter.tsx           # Used in footer + sidebar
+          ThemeToggle.tsx
+        layout/
+          Header.astro
+          Footer.astro
+      content/
+        blog/
+          config.ts
+          post-1.md
+        products/
+          config.ts
+      layouts/
+        BlogLayout.astro
+        BaseLayout.astro
+      lib/
+        utils.ts
+    ```
+  </Tab>
+
+  <Tab title="React">
+    ### React 19+ Setup
+
+    Set up a React project with Vite, TypeScript, and the Scope Rule architecture.
+
+    <Steps>
+      <Step title="Install React and Dependencies">
+        ```bash
+        # Create new React project with Vite
+        npm create vite@latest my-project -- --template react-ts
+        cd my-project
+
+        # Install dependencies
+        npm install
+
+        # Install dev dependencies
+        npm install --save-dev vitest @vitest/ui prettier eslint husky
+        ```
+      </Step>
+
+      <Step title="Create Feature-Based Structure">
+        ```bash
+        # Create features directory
+        mkdir -p src/features/{auth,shop,profile}
+
+        # Auth feature
+        mkdir -p src/features/auth/{components,services,hooks}
+
+        # Shop feature
+        mkdir -p src/features/shop/{components,services,hooks}
+
+        # Shared (2+ features only)
+        mkdir -p src/shared/{components,hooks,utils}
+
+        # Infrastructure
+        mkdir -p src/infrastructure/{api,auth,monitoring}
+        ```
+      </Step>
+
+      <Step title="Configure Vite and TypeScript">
+        Update `vite.config.ts` with path aliases:
+
+        ```typescript
+        import { defineConfig } from 'vite';
+        import react from '@vitejs/plugin-react';
+        import path from 'path';
+
+        export default defineConfig({
+          plugins: [react()],
+          resolve: {
+            alias: {
+              '@features': path.resolve(__dirname, './src/features'),
+              '@shared': path.resolve(__dirname, './src/shared'),
+              '@infrastructure': path.resolve(__dirname, './src/infrastructure'),
+            },
+          },
+        });
+        ```
+
+        Update `tsconfig.json`:
+        ```json
+        {
+          "compilerOptions": {
+            "paths": {
+              "@features/*": ["./src/features/*"],
+              "@shared/*": ["./src/shared/*"],
+              "@infrastructure/*": ["./src/infrastructure/*"]
+            }
+          }
+        }
+        ```
+      </Step>
+
+      <Step title="Create Container Component">
+        Create your first feature container (must match feature name):
+
+        ```typescript
+        // src/features/shop/shop.tsx
+        import { useState, useEffect } from 'react';
+        import { ShopView } from './components/shop-view';
+        import { useProducts } from './hooks/use-products';
+        import { Product } from './models';
+
+        export function Shop() {
+          const { products, loading, error } = useProducts();
+
+          if (loading) return <div>Loading...</div>;
+          if (error) return <div>Error: {error}</div>;
+
+          return <ShopView products={products} />;
+        }
+        ```
+      </Step>
+
+      <Step title="Create Presentational Components">
+        Create pure UI components:
+
+        ```typescript
+        // src/features/shop/components/shop-view.tsx
+        import { Product } from '../models';
+        import { ProductCard } from './product-card';
+
+        interface ShopViewProps {
+          products: Product[];
+        }
+
+        export function ShopView({ products }: ShopViewProps) {
+          return (
+            <div className="shop-view">
+              <h1>Shop</h1>
+              <div className="product-grid">
+                {products.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            </div>
+          );
+        }
+        ```
+      </Step>
+
+      <Step title="Set Up Routing">
+        Configure routes with React Router:
+
+        ```typescript
+        // src/App.tsx
+        import { BrowserRouter, Routes, Route } from 'react-router-dom';
+        import { Shop } from '@features/shop/shop';
+        import { Auth } from '@features/auth/auth';
+
+        export function App() {
+          return (
+            <BrowserRouter>
+              <Routes>
+                <Route path="/shop" element={<Shop />} />
+                <Route path="/auth" element={<Auth />} />
+              </Routes>
+            </BrowserRouter>
+          );
+        }
+        ```
+      </Step>
+    </Steps>
+
+    ### Key React Principles
+
+    - **Container/Presentational**: Separate business logic from UI
+    - **Container naming**: Main container MUST match feature name exactly
+    - **Component composition**: Build complex UIs from simple components
+    - **Custom hooks**: Extract reusable logic into hooks
+    - **Type safety**: Use TypeScript interfaces for all props
+
+    ### Directory Structure Result
+
+    ```
+    src/
+      features/
+        auth/
+          auth.tsx                 # Main container (matches feature name)
+          components/              # Presentational components
+            auth-view.tsx
+            login-form.tsx
+          services/
+            auth-service.ts
+          hooks/
+            use-auth.ts
+          models.ts
+        shop/
+          shop.tsx                 # Main container
+          components/
+            shop-view.tsx
+            product-card.tsx
+          services/
+            shop-service.ts
+          hooks/
+            use-products.ts
+          models.ts
+      shared/                      # 2+ features only
+        components/
+          button.tsx
+          card.tsx
+        hooks/
+          use-local-storage.ts
+        utils/
+          format.ts
+      infrastructure/              # Cross-cutting concerns
+        api/
+          client.ts
+        auth/
+          auth-provider.tsx
+      App.tsx
+      main.tsx
+    ```
+  </Tab>
+</Tabs>
+
+## Post-Setup Checklist
+
+After setting up your project, verify:
+
+- [ ] **Directory structure**: Features are clearly organized
+- [ ] **Path aliases**: Import paths are clean and readable
+- [ ] **Framework conventions**: Using latest patterns and best practices
+- [ ] **Scope Rule compliance**: Clear separation between local and shared
+- [ ] **Screaming architecture**: Structure communicates functionality
+- [ ] **Tooling**: Linting, formatting, and testing are configured
+
+## Common Setup Mistakes
+
+<Warning>
+  **Avoid these common pitfalls:**
+
+  - Creating a single `components/` folder for everything
+  - Mixing framework-specific patterns (e.g., using NgModules in Angular 20)
+  - Over-using shared directories before confirming 2+ feature usage
+  - Ignoring framework-specific optimizations (Server Components, islands, etc.)
+  - Not setting up path aliases (leads to messy relative imports)
+</Warning>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Component Placement" icon="map-pin" href="/guides/component-placement">
+    Learn the decision framework for placing components correctly
+  </Card>
+  <Card title="Migration Guide" icon="arrows-turn-right" href="/guides/migration">
+    Already have a project? Learn how to migrate to the Scope Rule
+  </Card>
+  <Card title="Best Practices" icon="circle-check" href="/guides/best-practices">
+    Quality checks and patterns for maintaining clean architecture
+  </Card>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Get started with the agents in minutes
+  </Card>
+</CardGroup>

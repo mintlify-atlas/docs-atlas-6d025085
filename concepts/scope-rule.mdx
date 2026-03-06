@@ -1,0 +1,245 @@
+---
+title: 'The Scope Rule'
+description: 'The fundamental principle that determines code placement based on usage scope'
+---
+
+## The Fundamental Principle
+
+The Scope Rule is the architectural foundation that all Scope Rule Architects enforce:
+
+<Info>
+**"Scope determines structure"**
+
+Code placement is not based on technical categories, but on actual usage patterns.
+</Info>
+
+## The Rule
+
+The Scope Rule consists of two simple, non-negotiable directives:
+
+<CardGroup cols={2}>
+  <Card title="2+ Features Rule" icon="share-nodes">
+    Code used by **2 or more features** MUST go in global/shared directories
+  </Card>
+  <Card title="1 Feature Rule" icon="lock">
+    Code used by **only 1 feature** MUST stay local within that feature
+  </Card>
+</CardGroup>
+
+### No Exceptions
+
+<Warning>
+This rule is **absolute and non-negotiable**. There are no edge cases, no "it depends," and no compromises.
+</Warning>
+
+The consistency provided by this rigid enforcement is what makes the architecture work at scale.
+
+## Real Examples from Frameworks
+
+### Next.js Structure
+
+From the Next.js Scope Rule Architect:
+
+```typescript
+src/
+  app/
+    (shop)/                        # Shop feature route group
+      shop/
+        page.tsx                   # /shop route
+        _components/               # Private: shop-specific components
+          product-list.tsx
+          product-filter.tsx
+      cart/
+        page.tsx                   # /cart route
+        _components/               # Private: cart-specific components
+          cart-item.tsx
+          cart-summary.tsx
+      wishlist/
+        page.tsx                   # /wishlist route
+        _components/               # Private: wishlist-specific components
+          wishlist-item.tsx
+          wishlist-grid.tsx
+  shared/                          # ONLY for 2+ route group usage
+    components/
+      product-card.tsx             # Used across shop, cart, wishlist routes
+      cart-widget.tsx              # Used in multiple route groups
+```
+
+**Why this structure?**
+- `product-list.tsx` is only used in the shop page → stays local in `shop/_components/`
+- `cart-item.tsx` is only used in the cart page → stays local in `cart/_components/`
+- `product-card.tsx` is used in shop, cart, AND wishlist → goes to `shared/components/`
+
+### Angular Structure
+
+From the Angular Scope Rule Architect:
+
+```typescript
+src/
+  app/
+    features/
+      shop/
+        shop.ts                    # Main standalone component
+        components/                # Shop-specific components
+          product-list.ts
+          product-filter.ts
+        services/                  # Shop-specific services
+          product.ts
+        signals/                   # Shop-specific signal stores
+          shop-state.ts
+      cart/
+        cart.ts                    # Main standalone component
+        components/                # Cart-specific components
+          cart-item.ts
+          cart-summary.ts
+        services/
+          cart.ts
+      shared/                      # ONLY for 2+ feature usage
+        components/                # Shared standalone components
+          product-card.ts          # Used by shop, cart, wishlist
+        services/                  # Shared services
+        pipes/                     # Shared pipes
+```
+
+**Why this structure?**
+- `product-list.ts` contains shop-specific filtering logic → stays in `shop/components/`
+- `cart-item.ts` has cart-specific quantity controls → stays in `cart/components/`
+- `product-card.ts` displays products across multiple features → goes to `shared/components/`
+
+### Astro Structure
+
+From the Astro Scope Rule Architect:
+
+```typescript
+src/
+  pages/
+    blog/
+      [...slug].astro              # Dynamic blog routes
+      index.astro                  # Blog listing page
+      components/                  # Blog-specific components
+        blog-card.astro           # Static blog preview
+        blog-sidebar.astro        # Static sidebar
+        comment-form.tsx          # Client island for interactivity
+      utils/
+        blog-helpers.ts           # Blog-specific utilities
+    shop/
+      products/
+        [slug].astro              # Product detail pages
+        index.astro               # Product listing
+      components/                 # Shop-specific components
+        product-card.astro        # Static product display
+        add-to-cart.tsx           # Client island for cart actions
+        product-filter.vue        # Client island using Vue
+      utils/
+        shop-helpers.ts           # Shop-specific utilities
+  components/                     # ONLY for 2+ page usage
+    ui/                          # Reusable UI components
+      Button.astro               # Used across multiple pages
+      Modal.tsx                  # Client island used site-wide
+    islands/                     # Interactive components
+      Newsletter.tsx             # Used in multiple pages
+      ThemeToggle.tsx           # Dark mode toggle
+```
+
+**Why this structure?**
+- `blog-card.astro` only displays blog content → stays in `blog/components/`
+- `add-to-cart.tsx` only handles shop cart actions → stays in `shop/components/`
+- `Newsletter.tsx` appears in blog sidebar AND footer → goes to `components/islands/`
+
+## Making Decisions
+
+When placing a new component, service, or utility:
+
+<Steps>
+  <Step title="Count Usage">
+    Count exactly how many features currently use this code. Be precise—don't guess or plan for future usage.
+  </Step>
+  <Step title="Apply the Rule">
+    - If count = 1 → Place locally within that feature
+    - If count ≥ 2 → Place in shared/global directories
+  </Step>
+  <Step title="Name Appropriately">
+    Ensure the file name clearly describes its purpose and scope
+  </Step>
+  <Step title="Refactor When Needed">
+    If a local component becomes shared later, move it. The structure should always reflect current reality.
+  </Step>
+</Steps>
+
+## Benefits of the Scope Rule
+
+<CardGroup cols={2}>
+  <Card title="Perfect Traceability" icon="magnifying-glass">
+    Know exactly where to find code based on what uses it. No more searching through massive shared directories.
+  </Card>
+  <Card title="Screaming Architecture" icon="volume-high">
+    Structure immediately communicates functionality. New developers understand the codebase by looking at the file tree.
+  </Card>
+  <Card title="Scalable Organization" icon="chart-line">
+    As your application grows, the structure grows naturally. No reorganization needed.
+  </Card>
+  <Card title="Zero Architectural Debt" icon="ban">
+    Prevents the "everything in components/" anti-pattern where shared folders become dumping grounds.
+  </Card>
+  <Card title="Clear Ownership" icon="users">
+    Teams know which code belongs to which feature, making collaboration smoother.
+  </Card>
+  <Card title="Easier Refactoring" icon="arrows-rotate">
+    Move features as complete units. Everything related is co-located.
+  </Card>
+</CardGroup>
+
+## Common Questions
+
+<AccordionGroup>
+  <Accordion title="What if I think a component might be shared in the future?">
+    Place it locally now. The Scope Rule is based on **current reality**, not future predictions. When the second feature actually needs it, move it to shared. This prevents premature abstraction.
+  </Accordion>
+  
+  <Accordion title="What about utilities that 'feel' like they should be shared?">
+    Apply the same rule. If only one feature uses a utility function, it stays local. Even if it seems generic, if only one feature uses it, it belongs there. Move it when a second feature needs it.
+  </Accordion>
+  
+  <Accordion title="Can I create sub-categories within shared directories?">
+    Yes, but be careful. In Next.js, you might have `shared/components/ui/` for UI primitives and `shared/components/` for business components. In Angular, you might separate `shared/components/` from `shared/pipes/`. The key is maintaining the 2+ feature rule for everything in shared.
+  </Accordion>
+  
+  <Accordion title="What counts as a 'feature'?">
+    A feature is a cohesive unit of functionality from the user's perspective. In Next.js, route groups like `(shop)` or `(auth)` are features. In Angular, feature modules or standalone feature components. In Astro, top-level page directories like `blog/` or `shop/`. If it delivers value independently, it's a feature.
+  </Accordion>
+  
+  <Accordion title="What if refactoring to shared is too much work right now?">
+    Create technical debt intentionally and document it. But understand: the Scope Rule violation is debt. The longer you wait, the harder the refactoring becomes. The rule exists to prevent this situation.
+  </Accordion>
+</AccordionGroup>
+
+## Anti-Patterns to Avoid
+
+<Warning>
+**The "Shared by Default" Anti-Pattern**
+
+Putting components in `shared/` or `components/` "because they might be reused" defeats the entire purpose. This is how shared folders become unmaintainable dumps.
+</Warning>
+
+<Warning>
+**The "Technical Categorization" Anti-Pattern**
+
+Organizing by technical type (`components/`, `services/`, `utils/`) rather than by feature creates the opposite of screaming architecture—your structure screams "I'm a React app" instead of "I'm an e-commerce platform."
+</Warning>
+
+<Warning>
+**The "It's Close Enough" Anti-Pattern**
+
+Relaxing the rule "just this once" breaks the consistency that makes the architecture work. Once you allow exceptions, the pattern deteriorates.
+</Warning>
+
+## Further Reading
+
+<CardGroup cols={2}>
+  <Card title="Screaming Architecture" href="/concepts/screaming-architecture">
+    Learn how the Scope Rule enables architecture that communicates intent
+  </Card>
+  <Card title="Co-location" href="/concepts/co-location">
+    Understand the benefits of keeping related code together
+  </Card>
+</CardGroup>
